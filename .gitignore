@@ -1,0 +1,8 @@
+# ignore data files
+
+data/
+raw/
+
+# output html
+
+*.html

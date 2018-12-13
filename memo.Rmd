@@ -1,0 +1,133 @@
+---
+title: Clustering analysis of SCRS 26 strains
+author: Guangyu Li
+date: October 2018
+output_format:
+  html_document
+---
+
+
+# Data overview
+
+## Preprocess
+
+Raw data acquired is in Horiba format (encoded, maybe compressed/encrypted).
+Data transformed by Dongqi using Horiba's LabSpec 6.
+In three datasets:
+
+* Exponential phase: 25 strains, 1440 samples
+* Platform P1: 26 strains, 1392 samples
+* Platform P2: 26 strains, 1407 samples
+* TOTAL: 26 strains, 4239 samples
+
+<font color="#FF0000"><b>!NOTE!</b></font> Non-essential changes made to the dataset:
+
+* EXPONENT1-50/<font color="#FF0000">18-585/18-585</font> (containing redundant files as EXPONENT1-50/<font color="#FF0000">18-585</font>) is omitted
+* PLATFORM1-50/18<font color="#FF0000">\_</font>3 renamed to PLATFORM1-50/18<font color="#FF0000">-</font>3
+
+Check dimensionality:
+
+```bash
+$ find -name '*.txt' -exec wc -l {} \; | cut -f 1 -d ' ' | sort | uniq
+```
+
+All files have 1024 dimensions. Now check the number of samples:
+
+```
+$ ./script/hist_labels.py
+```
+
+![Number of samples in each dataset](./image/hist_labels.png)
+
+The exponential phase has no strain "18-4".
+Note all three datasets have roughly balanced classes.
+But each class is relatively small due to the number of classes.
+The SCRS were normalized by "l2", mean scaled by the root square sum.
+
+Now it is good to explore the entire shape of data before doing analysis:
+```
+$ ./script/data_pca.py \
+	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
+	--mata ./data/EXPONENT1-50.normalized_l2.meta.tsv
+$ ./script/data_pca.py \
+	--data ./data/PLATFORM1-50.normalized_l2.data.tsv \
+	--mata ./data/PLATFORM1-50.normalized_l2.meta.tsv
+$ ./script/data_pca.py \
+	--data ./data/PLATFROM2-50.normalized_l2.data.tsv \
+	--mata ./data/PLATFROM2-50.normalized_l2.meta.tsv
+```
+
+![PCA of exponential phase](./image/EXPONENT1-50.normalized_l2.data.tsv.pac.png)
+
+![PCA of platform phase 1](./image/PLATFORM1-50.normalized_l2.data.tsv.pac.png)
+
+![PCA of platform phase 2](./image/PLATFORM2-50.normalized_l2.data.tsv.pac.png)
+
+
+# Gaussian Naive Bayes (GNB)
+
+Try GNB `(sklearn.naive_bayes.GaussianNB)`.
+10-fold cross-validation, each class evenly splited into each sets.
+
+```bash
+$ ./script/t1_method \
+	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
+	--meta ./data/EXPONENT1-50.normalized_l2.meta.tsv \
+	--model gnb --pca none --cv-folds 10
+$ ./script/t1_method \
+	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
+	--meta ./data/EXPONENT1-50.normalized_l2.meta.tsv \
+	--model gnb --pca 20 --cv-folds 10
+# similar to other two datasets
+```
+
+## Exponential phase
+
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+
+## Platform phase 1
+
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+
+## Platform phase 2
+
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+
+
+# Logistic Regression (LR)
+
+Try LR `(sklearn.linear_model.LogsticRegression)`.
+10-fold cross-validation, each class evenly splited into each sets.
+
+```bash
+$ ./script/t1_method \
+	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
+	--meta ./data/EXPONENT1-50.normalized_l2.meta.tsv \
+	--model lr --pca none --cv-folds 10
+$ ./script/t1_method \
+	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
+	--meta ./data/EXPONENT1-50.normalized_l2.meta.tsv \
+	--model lr --pca 20 --cv-folds 10
+# similar to other two datasets
+```
+
+## Exponential phase
+
+![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
+![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+
+## Platform phase 1
+
+![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
+![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+
+## Platform phase 2
+
+![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
+![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+
+
+
