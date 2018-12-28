@@ -3,16 +3,18 @@ data/
 raw/
 batch_script/
 
-# output image file
+# intermediate results
 # easy recover by scripts
 image/
+intermediate/
 
 # output html
 *.html
 
-# mac os stuff
-.DS_Store
-
 # development
 develop/
+
+# other junk
+.DS_Store
+.Rhistory
 

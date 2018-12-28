@@ -2,8 +2,10 @@
 title: Clustering analysis of SCRS 26 strains
 author: Guangyu Li
 date: October 2018
-output_format:
-  html_document
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
 ---
 
 
@@ -60,7 +62,9 @@ done
 ![PCA of platform phase 2](./image/PLATFORM2-50.normalized_l2.data.tsv.pac.png)
 
 
-# Gaussian Naive Bayes (GNB)
+# Exploratory 1
+
+## Gaussian Naive Bayes (GNB)
 
 Try GNB `(sklearn.naive_bayes.GaussianNB)`.
 10-fold cross-validation, each class evenly splited into each sets.
@@ -77,29 +81,50 @@ done
 # similar to other two datasets
 ```
 
-## Exponential phase
+### Without dimension reduction
+
+#### Exponential phase
 
 ![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_40.10_fold.png)
 
-## Platform phase 1
+#### Platform phase 1
 
 ![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_40.10_fold.png)
 
-## Platform phase 2
+#### Platform phase 2
 
 ![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
+
+### Dimension reduction: PCA (20)
+
+#### Exponential phase
+
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+
+#### Platform phase 1
+
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+
+#### Platform phase 2
+
 ![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+
+### Dimension reduction: PCA (26)
+
+#### Exponential phase
+
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
+
+#### Platform phase 1
+
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
+
+#### Platform phase 2
+
 ![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_40.10_fold.png)
 
 
-# Logistic Regression (LR)
+## Logistic Regression (LR)
 
 Try LR `(sklearn.linear_model.LogsticRegression)`.
 10-fold cross-validation, each class evenly splited into each sets.
@@ -116,26 +141,105 @@ done
 # similar to other two datasets
 ```
 
-## Exponential phase
+### Without dimension reduction
 
-![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
-![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
-![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
-![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_40.10_fold.png)
+#### Exponential phase
 
-## Platform phase 1
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
 
-![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
-![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
-![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
-![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_40.10_fold.png)
+#### Platform phase 1
 
-## Platform phase 2
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
 
-![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
-![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
-![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
-![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_40.10_fold.png)
+#### Platform phase 2
+
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
+
+### Dimension reduction: PCA (20)
+
+#### Exponential phase
+
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+
+#### Platform phase 1
+
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+
+#### Platform phase 2
+
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+
+### Dimension reduction: PCA (26)
+
+#### Exponential phase
+
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
+
+#### Platform phase 1
+
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
+
+#### Platform phase 2
+
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
 
 
+## Linear Discriminant Analysis (LDA)
+
+Try LDA `(sklearn.discriminant_analysis.LinearDiscriminantAnalysis)` as classifier.
+10-fold cross-validation, each class evenly splited into each sets.
+
+```bash
+for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
+	for pca in {none,20,26,40}; do
+		python3 ./script/t1_methods.py \
+			--data ./data/$file".normalized_l2.data.tsv" \
+			--meta ./data/$file".normalized_l2.meta.tsv" \
+			--model lda --pca $pca
+	done
+done
+# similar to other two datasets
+```
+
+### Without dimension reduction
+
+#### Exponential phase
+
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.pca_none.10_fold.png)
+
+#### Platform phase 1
+
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.pca_none.10_fold.png)
+
+#### Platform phase 2
+
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.pca_none.10_fold.png)
+
+### Dimension reduction: PCA (20)
+
+#### Exponential phase
+
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.pca_20.10_fold.png)
+
+#### Platform phase 1
+
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.pca_20.10_fold.png)
+
+#### Platform phase 2
+
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.pca_20.10_fold.png)
+
+### Dimension reduction: PCA (26)
+
+#### Exponential phase
+
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.pca_26.10_fold.png)
+
+#### Platform phase 1
+
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.pca_26.10_fold.png)
+
+#### Platform phase 2
+
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.pca_26.10_fold.png)
 

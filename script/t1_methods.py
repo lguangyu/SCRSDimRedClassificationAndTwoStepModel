@@ -6,6 +6,7 @@ import sklearn.naive_bayes
 import sklearn.preprocessing
 import sklearn.metrics
 import sklearn.decomposition
+import sklearn.discriminant_analysis
 import argparse
 from matplotlib import pyplot
 import os
@@ -18,7 +19,7 @@ def get_args():
 	ap.add_argument("--meta", type = str, metavar = "tsv", required = True,
 		help = "metadata file tsv (required)")
 	ap.add_argument("--model", type = str, required = True,
-		choices = ["gnb", "lr"],
+		choices = ["gnb", "lr", "lda"],
 		help = "choice of fitting model (required)")
 	ap.add_argument("--pca", type = str, metavar = "int|none", default = "none",
 		help = "apply dimension reduction with PCA (none or any positive integer, default: none)")
@@ -93,6 +94,8 @@ def cv_model_fit(model, train_data, train_label):
 		m = sklearn.naive_bayes.GaussianNB()
 	elif model == "lr":
 		m = sklearn.linear_model.LogisticRegression()
+	elif model == "lda":
+		m = sklearn.discriminant_analysis.LinearDiscriminantAnalysis()
 	else:
 		raise RuntimeError("unrecognized model")
 
