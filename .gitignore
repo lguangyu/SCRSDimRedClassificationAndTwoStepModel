@@ -15,6 +15,7 @@ intermediate/
 develop/
 
 # other junk
+*.swp
 .DS_Store
 .Rhistory
 

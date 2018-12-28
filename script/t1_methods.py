@@ -7,6 +7,7 @@ import sklearn.preprocessing
 import sklearn.metrics
 import sklearn.decomposition
 import sklearn.discriminant_analysis
+import sklearn.svm
 import argparse
 from matplotlib import pyplot
 import os
@@ -19,7 +20,7 @@ def get_args():
 	ap.add_argument("--meta", type = str, metavar = "tsv", required = True,
 		help = "metadata file tsv (required)")
 	ap.add_argument("--model", type = str, required = True,
-		choices = ["gnb", "lr", "lda"],
+		choices = ["gnb", "lr", "lda", "svm_lin", "svm_rbf"],
 		help = "choice of fitting model (required)")
 	ap.add_argument("--pca", type = str, metavar = "int|none", default = "none",
 		help = "apply dimension reduction with PCA (none or any positive integer, default: none)")
@@ -96,6 +97,12 @@ def cv_model_fit(model, train_data, train_label):
 		m = sklearn.linear_model.LogisticRegression()
 	elif model == "lda":
 		m = sklearn.discriminant_analysis.LinearDiscriminantAnalysis()
+	elif model == "svm_lin":
+		m = sklearn.svm.LinearSVC(multi_class = "ovr")
+	elif model == "svm_rbf":
+		sigma = numpy.median(sklearn.metrics.pairwise.euclidean_distances(train_data))
+		gamma = 1.0 / (2 * sigma ** 2)
+		m = sklearn.svm.SVC(kernel = "rbf", gamma = gamma)
 	else:
 		raise RuntimeError("unrecognized model")
 

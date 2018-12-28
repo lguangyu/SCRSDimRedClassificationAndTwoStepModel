@@ -1,5 +1,5 @@
 ---
-title: Clustering analysis of SCRS 26 strains
+title: Strain-level SCRS classification analysis (26 classes)
 author: Guangyu Li
 date: October 2018
 output:
@@ -81,47 +81,47 @@ done
 # similar to other two datasets
 ```
 
-### Without dimension reduction
+### GNB: w/o dimension reduction
 
 #### Exponential phase
 
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
 
 #### Platform phase 1
 
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
 
 #### Platform phase 2
 
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
 
-### Dimension reduction: PCA (20)
+### GNB: dimension reduction: PCA (20)
 
 #### Exponential phase
 
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
 
 #### Platform phase 1
 
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
 
 #### Platform phase 2
 
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
 
-### Dimension reduction: PCA (26)
+### GNB: dimension reduction: PCA (26)
 
 #### Exponential phase
 
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
 
 #### Platform phase 1
 
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
 
 #### Platform phase 2
 
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
 
 
 ## Logistic Regression (LR)
@@ -141,47 +141,47 @@ done
 # similar to other two datasets
 ```
 
-### Without dimension reduction
+### LR: w/o dimension reduction
 
 #### Exponential phase
 
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
 
 #### Platform phase 1
 
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
 
 #### Platform phase 2
 
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
 
-### Dimension reduction: PCA (20)
+### LR: dimension reduction: PCA (20)
 
 #### Exponential phase
 
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
 
 #### Platform phase 1
 
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
 
 #### Platform phase 2
 
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
 
-### Dimension reduction: PCA (26)
+### LR: dimension reduction: PCA (26)
 
 #### Exponential phase
 
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
 
 #### Platform phase 1
 
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
 
 #### Platform phase 2
 
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
 
 
 ## Linear Discriminant Analysis (LDA)
@@ -201,45 +201,107 @@ done
 # similar to other two datasets
 ```
 
-### Without dimension reduction
+### LDA: w/o dimension reduction
 
 #### Exponential phase
 
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.pca_none.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.pca_none.10_fold.png)
 
 #### Platform phase 1
 
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.pca_none.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.pca_none.10_fold.png)
 
 #### Platform phase 2
 
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.pca_none.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.pca_none.10_fold.png)
 
-### Dimension reduction: PCA (20)
+### LDA: dimension reduction: PCA (20)
 
 #### Exponential phase
 
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.pca_20.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.pca_20.10_fold.png)
 
 #### Platform phase 1
 
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.pca_20.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.pca_20.10_fold.png)
 
 #### Platform phase 2
 
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.pca_20.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.pca_20.10_fold.png)
 
-### Dimension reduction: PCA (26)
+### LDA: dimension reduction: PCA (26)
 
 #### Exponential phase
 
-![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.pca_26.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.pca_26.10_fold.png)
 
 #### Platform phase 1
 
-![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.pca_26.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.pca_26.10_fold.png)
 
 #### Platform phase 2
 
-![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.pca_26.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.pca_26.10_fold.png)
+
+
+# Exploratory 2
+
+## Linear Support Vector Machine (SVM)
+
+Try SVM `(sklearn.svm.LinearSVM)`.
+10-fold cross-validation, each class evenly splited into each sets.
+
+```bash
+for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
+	python3 ./script/t1_methods.py \
+		--data ./data/$file".normalized_l2.data.tsv" \
+		--meta ./data/$file".normalized_l2.meta.tsv" \
+		--model svm_lin
+done
+# similar to other two datasets
+```
+
+### SVM: w/o dimension reduction
+
+#### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.svm_lin.pca_none.10_fold.png)
+
+#### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.svm_lin.pca_none.10_fold.png)
+
+#### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_lin.pca_none.10_fold.png)
+
+
+## Kernel Support Vector Machine (SVM + RBF kernel)
+
+Try SVM `(sklearn.svm.SVM(kernel = "rbf", gamma = <median Euclidean training set>))`.
+10-fold cross-validation, each class evenly splited into each sets.
+
+```bash
+for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
+	python3 ./script/t1_methods.py \
+		--data ./data/$file".normalized_l2.data.tsv" \
+		--meta ./data/$file".normalized_l2.meta.tsv" \
+		--model svm_rbf
+done
+# similar to other two datasets
+```
+
+### SVM: w/o dimension reduction
+
+#### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.svm_rbf.pca_none.10_fold.png)
+
+#### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.svm_rbf.pca_none.10_fold.png)
+
+#### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.pca_none.10_fold.png)
 
