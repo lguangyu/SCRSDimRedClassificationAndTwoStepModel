@@ -1,6 +1,6 @@
 ---
 title: Strain-level SCRS classification analysis (26 classes)
-author: Guangyu Li
+author: Research notes
 date: October 2018
 output:
   html_document:
@@ -78,7 +78,6 @@ for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
 			--model gnb --pca $pca
 	done
 done
-# similar to other two datasets
 ```
 
 ### GNB: w/o dimension reduction
@@ -138,7 +137,6 @@ for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
 			--model lr --pca $pca
 	done
 done
-# similar to other two datasets
 ```
 
 ### LR: w/o dimension reduction
@@ -198,7 +196,6 @@ for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
 			--model lda --pca $pca
 	done
 done
-# similar to other two datasets
 ```
 
 ### LDA: w/o dimension reduction
@@ -258,7 +255,6 @@ for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
 		--meta ./data/$file".normalized_l2.meta.tsv" \
 		--model svm_lin
 done
-# similar to other two datasets
 ```
 
 ### SVM: w/o dimension reduction
@@ -288,7 +284,6 @@ for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
 		--meta ./data/$file".normalized_l2.meta.tsv" \
 		--model svm_rbf
 done
-# similar to other two datasets
 ```
 
 ### SVM: w/o dimension reduction
@@ -305,3 +300,102 @@ done
 
 ![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.pca_none.10_fold.png)
 
+
+# HSIC Dimenstion Reduction (26)
+
+As known ground truth, use `--num-clusters=26 --reduce-dims-to=26`.
+
+
+```bash
+for model in {gnb,lr,lda,svm_lin,svm_rbf}; do
+	for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
+		python3 ./script/t1_methods.py \
+			--data ./data/$file".normalized_l2.data.tsv.lsdr.tsv" \
+			--meta ./data/$file".normalized_l2.meta.tsv" \
+			--model $model
+	done
+done
+```
+
+## Gaussian Naive Bayes (GNB)
+
+### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.gnb.pca_none.10_fold.png)
+
+### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.gnb.pca_none.10_fold.png)
+
+### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.gnb.pca_none.10_fold.png)
+
+
+## Logistic Regression (LR)
+
+### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.lr.pca_none.10_fold.png)
+
+### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.lr.pca_none.10_fold.png)
+
+### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.lr.pca_none.10_fold.png)
+
+
+## Linear Discriminant Analysis (LDA)
+
+### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.lda.pca_none.10_fold.png)
+
+### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.lda.pca_none.10_fold.png)
+
+### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.lda.pca_none.10_fold.png)
+
+
+## Linear Support Vector Machine (SVM)
+
+### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.svm_lin.pca_none.10_fold.png)
+
+### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.svm_lin.pca_none.10_fold.png)
+
+### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.svm_lin.pca_none.10_fold.png)
+
+
+## Kernel Support Vector Machine (SVM + RBF kernel)
+
+### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.svm_rbf.pca_none.10_fold.png)
+
+### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.svm_rbf.pca_none.10_fold.png)
+
+### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.svm_rbf.pca_none.10_fold.png)
+
+
+
+
+# NOTES
+
+## 2018-12-28
+
+* In cross-validataion, dimension reduction on full dataset then split, or split first then do on training set only?
