@@ -33,7 +33,7 @@ $ find -name '*.txt' -exec wc -l {} \; | cut -f 1 -d ' ' | sort | uniq
 
 All files have 1024 dimensions. Now check the number of samples:
 
-```
+```bash
 $ ./script/hist_labels.py
 ```
 
@@ -45,16 +45,12 @@ But each class is relatively small due to the number of classes.
 The SCRS were normalized by "l2", mean scaled by the root square sum.
 
 Now it is good to explore the entire shape of data before doing analysis:
-```
-$ ./script/data_pca.py \
-	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
-	--mata ./data/EXPONENT1-50.normalized_l2.meta.tsv
-$ ./script/data_pca.py \
-	--data ./data/PLATFORM1-50.normalized_l2.data.tsv \
-	--mata ./data/PLATFORM1-50.normalized_l2.meta.tsv
-$ ./script/data_pca.py \
-	--data ./data/PLATFROM2-50.normalized_l2.data.tsv \
-	--mata ./data/PLATFROM2-50.normalized_l2.meta.tsv
+```bash
+for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
+	python3 ./script/data_pca.py \
+		--data ./data/$file".normalized_l2.data.tsv" \
+		--meta ./data/$file".normalized_l2.meta.tsv"
+done
 ```
 
 ![PCA of exponential phase](./image/EXPONENT1-50.normalized_l2.data.tsv.pac.png)
@@ -70,14 +66,14 @@ Try GNB `(sklearn.naive_bayes.GaussianNB)`.
 10-fold cross-validation, each class evenly splited into each sets.
 
 ```bash
-$ ./script/t1_method \
-	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
-	--meta ./data/EXPONENT1-50.normalized_l2.meta.tsv \
-	--model gnb --pca none --cv-folds 10
-$ ./script/t1_method \
-	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
-	--meta ./data/EXPONENT1-50.normalized_l2.meta.tsv \
-	--model gnb --pca 20 --cv-folds 10
+for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
+	for pca in {none,20,26,40}; do
+		python3 ./script/t1_methods.py \
+			--data ./data/$file".normalized_l2.data.tsv" \
+			--meta ./data/$file".normalized_l2.meta.tsv" \
+			--model gnb --pca $pca
+	done
+done
 # similar to other two datasets
 ```
 
@@ -85,16 +81,22 @@ $ ./script/t1_method \
 
 ![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
 ![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
+![GNB on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.pca_40.10_fold.png)
 
 ## Platform phase 1
 
 ![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
 ![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
+![GNB on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.pca_40.10_fold.png)
 
 ## Platform phase 2
 
 ![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_none.10_fold.png)
 ![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_20.10_fold.png)
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_26.10_fold.png)
+![GNB on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.pca_40.10_fold.png)
 
 
 # Logistic Regression (LR)
@@ -103,14 +105,14 @@ Try LR `(sklearn.linear_model.LogsticRegression)`.
 10-fold cross-validation, each class evenly splited into each sets.
 
 ```bash
-$ ./script/t1_method \
-	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
-	--meta ./data/EXPONENT1-50.normalized_l2.meta.tsv \
-	--model lr --pca none --cv-folds 10
-$ ./script/t1_method \
-	--data ./data/EXPONENT1-50.normalized_l2.data.tsv \
-	--meta ./data/EXPONENT1-50.normalized_l2.meta.tsv \
-	--model lr --pca 20 --cv-folds 10
+for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
+	for pca in {none,20,26,40}; do
+		python3 ./script/t1_methods.py \
+			--data ./data/$file".normalized_l2.data.tsv" \
+			--meta ./data/$file".normalized_l2.meta.tsv" \
+			--model lr --pca $pca
+	done
+done
 # similar to other two datasets
 ```
 
@@ -118,16 +120,22 @@ $ ./script/t1_method \
 
 ![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
 ![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
+![LR on 10-fold CV](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.pca_40.10_fold.png)
 
 ## Platform phase 1
 
 ![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
 ![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
+![LR on 10-fold CV](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.pca_40.10_fold.png)
 
 ## Platform phase 2
 
 ![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_none.10_fold.png)
 ![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_20.10_fold.png)
+![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_26.10_fold.png)
+![LR on 10-fold CV](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.pca_40.10_fold.png)
 
 
 

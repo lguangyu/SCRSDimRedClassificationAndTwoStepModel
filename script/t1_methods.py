@@ -20,9 +20,9 @@ def get_args():
 	ap.add_argument("--model", type = str, required = True,
 		choices = ["gnb", "lr"],
 		help = "choice of fitting model (required)")
-	ap.add_argument("--pca", type = str, default = "none",
+	ap.add_argument("--pca", type = str, metavar = "int|none", default = "none",
 		help = "apply dimension reduction with PCA (none or any positive integer, default: none)")
-	ap.add_argument("--cv-folds", type = int, default = 10,
+	ap.add_argument("--cv-folds", type = int, metavar = "int", default = 10,
 		help = "n-fold cross validation (default: 10)")
 	args = ap.parse_args()
 	# check args

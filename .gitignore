@@ -1,9 +1,14 @@
 # ignore data files
-
 data/
 raw/
 batch_script/
 
 # output html
-
 *.html
+
+# mac os stuff
+.DS_Store
+
+# development
+develop/
+
