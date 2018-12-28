@@ -3,6 +3,10 @@ data/
 raw/
 batch_script/
 
+# output image file
+# easy recover by scripts
+image/
+
 # output html
 *.html
 
