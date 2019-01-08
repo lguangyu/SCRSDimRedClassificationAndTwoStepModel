@@ -5,37 +5,45 @@ import numpy
 
 class EvenSplitCrossValidation(object):
 	def __init__(self, data, labels, n_fold = 10,
-		permutation = False, permutation_table = None):
+		permutation = "disable"):
 		"""
 		generate dataset splits for cross validation;
 		labels must be encoded;
+		permutation can be: 'disable', 'random' or an permutation table array
+		if 'random', randomly generate the permutation table
 		"""
 		super(EvenSplitCrossValidation, self).__init__()
 		# ensure copy below two as numpy array
 		self.data = numpy.array(data)
 		self.labels = numpy.array(labels, dtype = int)
-		self.permutation_table =\
-			self._permutate(permutation, permutation_table)
+		# self.permutation_table = None if disabled
+		# otherwise the table either passed in or generated
+		self.permutation_table = self._permutate_inplace(permutation)
 		self.n_fold = n_fold
 		self._test_masks = \
 			self._generate_test_masks(self.data, self.labels, self.n_fold)
 
 
-	def _permutate(self, permutation, permutation_table):
+	def _permutate_inplace(self, permutation):
 		"""
 		only permutate data if permutation = True;
 		if so, if permutation_table is None, randomly generate;
 		else, use specified one
 		"""
-		if permutation:
-			if permutation_table is None:
-				permutation_table = numpy.random.permutation(len(self.labels))
-			# permutate both data and labels
-			self.data	= self.data[permu_table]
-			self.labels	= self.labels[permu_table]
-			return permutation_table
-		else:
+		if permutation == "disable":
+
 			return None
+		else:
+			# get permutation table
+			if permutation == "random":
+				_table = numpy.random.permutation(len(self.labels))
+			else:
+				_table = permutation.copy()
+			# permutate inplace
+			self.data	= self.data[_table]
+			self.labels	= self.labels[_table]
+			return _table
+		return #
 
 
 	@staticmethod
@@ -47,6 +55,7 @@ class EvenSplitCrossValidation(object):
 		"""
 		# nonzero indices
 		nonzero = (numpy.nonzero(bool_vec)[0]).tolist() # turn to list
+		# slice indices list
 		slice_size = len(nonzero) / n_splits # this is ok to be decimal
 		ret = []
 		for i in range(n_splits):
@@ -59,7 +68,7 @@ class EvenSplitCrossValidation(object):
 	@staticmethod
 	def _generate_test_masks(data, labels, n_fold):
 		# find each label mask (bool vector)
-		# then split each label mask
+		# then split each label mask by _split_bool_vector
 		# combine corresponding split 
 		# get unique labels
 		uniq_labels = numpy.unique(labels)
@@ -68,12 +77,14 @@ class EvenSplitCrossValidation(object):
 		label_splits = [EvenSplitCrossValidation.\
 			_split_bool_vector(labels == label, n_fold)
 			for label in uniq_labels]
-		#
+		# note these are indices,
+		# next, each split just need to assign these indices to True
+		# in a originally full of False vector
 		ret = []
 		for index in range(n_fold):
 			mask = numpy.full(len(labels), False, dtype = bool)
 			for _sp in label_splits:
-				# label[#labels][#splits]
+				# structure: label[#labels][#splits]
 				_indices = _sp[index]
 				mask[_indices] = True
 			ret.append(mask)
@@ -82,18 +93,20 @@ class EvenSplitCrossValidation(object):
 
 	def get_split(self, index, return_mask = False):
 		"""
-		if return_mask is False, return train/test datasets
+		if return_mask is False, return train/test datasets (X and Y)
 		else return the corresponding masks
 		"""
 		test_mask = self._test_masks[index]
 		train_mask = numpy.logical_not(test_mask)
 		if return_mask:
+			# return only two
 			return train_mask, test_mask
 		else:
 			train_data = self.data[train_mask]
 			test_data = self.data[test_mask]
 			train_label = self.labels[train_mask]
 			test_label = self.labels[test_mask]
+			# need to return four
 			return train_data, test_data, train_label, test_label
 
 
@@ -105,6 +118,10 @@ class EvenSplitCrossValidation(object):
 
 
 	def __next__(self):
+		"""
+		enables using of 'for tX, vX, tY, vY in escv: ...'
+		iterate through all splits
+		"""
 		i = 0
 		while i < self.n_fold:
 			yield self[i]

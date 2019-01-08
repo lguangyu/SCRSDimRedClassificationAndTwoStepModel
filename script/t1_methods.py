@@ -1,227 +1,118 @@
 #!/usr/bin/env python3
 
-import numpy
-import sklearn.linear_model
-import sklearn.naive_bayes
-import sklearn.preprocessing
-import sklearn.metrics
-import sklearn.decomposition
-import sklearn.discriminant_analysis
-import sklearn.svm
-import argparse
-from matplotlib import pyplot
 import os
+import sys
+import numpy
+import argparse
+import sklearn.preprocessing
+import custom_pylib.cv_split
+import custom_pylib.dim_reduction
+import custom_pylib.cross_validation
 
 
 def get_args():
 	ap = argparse.ArgumentParser()
-	ap.add_argument("--data", type = str, metavar = "tsv", required = True,
+	ap.add_argument("-i", "--data", type = str, metavar = "tsv", required = True,
 		help = "sample data file tsv (required)")
-	ap.add_argument("--meta", type = str, metavar = "tsv", required = True,
+	ap.add_argument("-m", "--meta", type = str, metavar = "tsv", required = True,
 		help = "metadata file tsv (required)")
-	ap.add_argument("--model", type = str, required = True,
+	ap.add_argument("-c", "--classifier", type = str, required = True,
 		choices = ["gnb", "lr", "lda", "svm_lin", "svm_rbf"],
 		help = "choice of fitting model (required)")
-	ap.add_argument("--pca", type = str, metavar = "int|none", default = "none",
-		help = "apply dimension reduction with PCA (none or any positive integer, default: none)")
-	ap.add_argument("--cv-folds", type = int, metavar = "int", default = 10,
+	ap.add_argument("-f", "--cv-folds", type = int, metavar = "int", default = 10,
 		help = "n-fold cross validation (default: 10)")
+	ap.add_argument("-R", "--dim-reduc", type = str,
+		default = "none", choices = ["none", "pca", "lda", "lsdr"],
+		help = "choosing dimension reduction method (default: none)")
+	ap.add_argument("-D", "--reduce-dim-to", type = str,
+		metavar = "none|int", default = "none",
+		help = "reduce dimensionality to this value, must be positive and is required if --dim-reduc is not 'none', omitted otherwise")
+	gp = ap.add_argument_group("output")
+	gp.add_argument("--output-txt-dir", type = str, metavar = "dir", default = "output",
+		help = "output txt results to this dir (default: output)")
+	gp.add_argument("--output-png-dir", type = str, metavar = "dir", default = "image",
+		help = "output png results to this dir (default: image)")
 	args = ap.parse_args()
 	# check args
 	if args.cv_folds <= 0:
-		raise ValueError("--cv-folds must be positive integer")
-	if args.pca != "none":
-		try:
-			args.pca = int(args.pca)
-			if args.pca <= 0:
-				raise Exception()
-		except:
-			raise ValueError("--pca must be none or positive integer")
+		raise ValueError("--cv-folds must be positive")
+	if args.dim_reduc == "none":
+		args.reduce_dim_to = "none" # set this to none as omitted
+	else:
+		if args.reduce_dim_to == "none":
+			raise ValueError("--reduce-dim-to is required when --dim-reduc not none")
+		# turn string into int
+		args.reduce_dim_to = int(args.reduce_dim_to)
+		if args.reduce_dim_to <= 0:
+			raise ValueError("--reduce-dim-to must be positive")
+	# format output fname string
+	# excluding folder and extension
+	args.output_str = "%s.%s.dr_%s_%s.%d_fold" % (
+		os.path.basename(args.data), args.classifier,
+		args.dim_reduc, str(args.reduce_dim_to), args.cv_folds)
 	return args
 
 
-def load_data(dataf, metaf):
-	data = numpy.loadtxt(dataf, dtype = float, delimiter = "\t")
-	with open(metaf, "r") as fh:
+def print_runinfo(args, fh = sys.stderr):
+	arg_vars = vars(args)
+	for key in ["data", "meta", "classifier", "cv_folds", "dim_reduc",
+		"reduce_dim_to"]:
+		print(key + ":", arg_vars[key], file = fh)
+
+
+def load_data(fdata, fmeta):
+	data = numpy.loadtxt(fdata, dtype = float, delimiter = "\t")
+	with open(fmeta, "r") as fh:
 		meta = fh.read().splitlines()
+	# label is the 1st col in metadata file
 	labels = [i.split("\t")[0] for i in meta]
 	labels = numpy.asarray(labels, dtype = object)
 	return data, labels
 
 
+def get_unique_labels(labels):
+	uniques = numpy.unique(labels)
+	uniques.sort()
+	return uniques
+
+
 def encode_labels(labels):
-	le = sklearn.preprocessing.LabelEncoder()
-	le.fit(labels)
-	return le, le.transform(labels)
-
-
-def split_bool_mask(bool_vec, n_splits):
-	nonzero = numpy.nonzero(bool_vec)[0]
-	slice_size = len(nonzero) / n_splits
-	ret = []
-	for i in range(n_splits):
-		mask = numpy.zeros(len(bool_vec), dtype = bool)
-		s_start = int(slice_size * i)
-		s_end = int(slice_size * (i + 1))
-		selects = nonzero[s_start:s_end]
-		mask[selects] = True
-		ret.append(mask)
-	return ret
-
-
-def cv_equal_classes(labels, n_fold = 10):
-	splits = []
-	# uniq labels
-	uniq_labels = numpy.unique(labels)
-	uniq_labels.sort()
-	# find slice size (decimal) for each label
-	label_splits = [split_bool_mask(labels == l, n_fold) for l in uniq_labels]
-	test_masks = [numpy.zeros(len(labels), dtype = bool) for i in range(n_fold)]
-	for i, ls in enumerate(label_splits):
-		for s, mk in enumerate(ls):
-			test_masks[s] = numpy.logical_or(test_masks[s], mk)
-	data_masks = [numpy.logical_not(i) for i in test_masks]
-	return data_masks, test_masks
-
-
-def pca_reduce_dimension(data, n_components):
-	pca = sklearn.decomposition.PCA(n_components = n_components)
-	transformed = pca.fit_transform(data)
-	return pca, transformed
-
-
-def cv_model_fit(model, train_data, train_label):
-	if model == "gnb":
-		m = sklearn.naive_bayes.GaussianNB()
-	elif model == "lr":
-		m = sklearn.linear_model.LogisticRegression()
-	elif model == "lda":
-		m = sklearn.discriminant_analysis.LinearDiscriminantAnalysis()
-	elif model == "svm_lin":
-		m = sklearn.svm.LinearSVC(multi_class = "ovr")
-	elif model == "svm_rbf":
-		sigma = numpy.median(sklearn.metrics.pairwise.euclidean_distances(train_data))
-		gamma = 1.0 / (2 * sigma ** 2)
-		m = sklearn.svm.SVC(kernel = "rbf", gamma = gamma)
-	else:
-		raise RuntimeError("unrecognized model")
-
-	m.fit(train_data, train_label)
-	return m
-
-def cv_model_test(fitted_model, test_data, test_label):
-	pred_label = fitted_model.predict(test_data)
-	ns = {}
-	ns["accuracy"] = sklearn.metrics.accuracy_score(test_label, pred_label)
-	ns["precision"] = sklearn.metrics.precision_score(test_label, pred_label, average = "micro")
-	ns["precision_class"] = sklearn.metrics.precision_score(test_label, pred_label, average = None)
-	ns["f"] = sklearn.metrics.f1_score(test_label, pred_label, average = "micro")
-	ns["f_class"] = sklearn.metrics.f1_score(test_label, pred_label, average = None)
-	#ns["auc"] = sklearn.metrics.roc_auc_score(test_label, pred_label, average = "micro")
-	#ns["auc_class"] = sklearn.metrics.roc_auc_score(test_label, pred_label, average = None)
-	return ns
+	encoder = sklearn.preprocessing.LabelEncoder()
+	encoder.fit(labels)
+	return encoder, encoder.transform(labels)
 
 
 def main():
 	args = get_args()
+	print_runinfo(args)
+
 	# load data
 	data, labels = load_data(args.data, args.meta)
 
 	# preprocessing
-	uniq_labels = numpy.unique(labels)
-	uniq_labels.sort()
-	le, encoded_l = encode_labels(labels)
+	uniq_labels = get_unique_labels(labels)
+	lab_encoder, encoded_labels = encode_labels(labels)
 
-	# data split for cross validation
-	# generate masks
-	cv_data_masks, cv_test_masks = cv_equal_classes(encoded_l, args.cv_folds)
+	# cross validation
+	cv = custom_pylib.cross_validation.CrossValidation(
+		classifier = args.classifier, n_fold = args.cv_folds,
+		dim_reduc = args.dim_reduc, reduce_dim_to = args.reduce_dim_to)
+	cv.run_cv(data, encoded_labels)
+	cv_res = cv.get_result()
 
-	# run cross validation
-	cv_res = []
-	for dmsk, tmsk in zip(cv_data_masks, cv_test_masks):
-		# get cv data
-		train_data	= data[dmsk]
-		test_data	= data[tmsk]
-		train_label	= encoded_l[dmsk]
-		test_label	= encoded_l[tmsk]
-		if args.pca != "none":
-			# do dimension reduction on only train data
-			pca, train_data = pca_reduce_dimension(train_data, args.pca)
-			# then transform test data
-			test_data = pca.transform(test_data)
-		model = cv_model_fit(args.model, train_data, train_label)
-		_test_res = cv_model_test(model, test_data, test_label)
-		cv_res.append(_test_res)
-
-	# plot
-	cmap = pyplot.get_cmap("tab10")
-	fig = pyplot.figure(figsize = (12, 4))
-	suptitle = "%s, model=%s, PCA=%s, n_fold=%d" % (os.path.basename(args.data),
-		args.model, str(args.pca), args.cv_folds)
-	fig.suptitle(suptitle)
-	ax_sep = fig.add_axes([0.07, 0.25, 0.70, 0.62])
-	ax_all = fig.add_axes([0.78, 0.25, 0.05, 0.62])
-	# plot separate
-	for i, key in enumerate(["precision_class", "f_class"]):
-		color = cmap(i)
-		for label in uniq_labels:
-			el, = le.transform([label])
-			data = [r[key][el] for r in cv_res]
-			x = el + 0.80 + 0.20 * i
-			bplot = ax_sep.boxplot(data, positions = [x], widths = 0.20,
-				patch_artist = True,
-				showfliers = False, showmeans = True)
-			for box in bplot["boxes"]:
-				box.set_facecolor(color)
-
-	ax_sep.set_xlim(0, len(uniq_labels) + 1)
-	ax_sep.set_xticks(numpy.arange(1, len(uniq_labels) + 1))
-	ax_sep.set_xticklabels(uniq_labels, rotation = 270)
-	ax_sep.set_ylim(-0.05, 1.05)
-	# plot all
-	ax_all.tick_params(labelleft = False, left = False,
-		right = True, labelright = True)
-	figs = []
-	for i, key in enumerate(["precision", "f", "accuracy"]):
-		color = cmap(i)
-		data = [r[key] for r in cv_res]
-		x = 0.80 + 0.20 * i
-		bplot = ax_all.boxplot(data, positions = [x], widths = 0.20,
-			patch_artist = True,
-			showfliers = False, showmeans = True)
-		for box in bplot["boxes"]:
-			box.set_facecolor(color)
-		figs.append(bplot["boxes"][0])
-	ax_all.set_xlim(0.5, 1.5)
-	ax_all.set_xticks([1])
-	ax_all.set_xticklabels(["Overall"], rotation = 270)
-	ax_all.set_ylim(-0.05, 1.05)
-	ax_all.legend(handles = figs, labels = ["Precision", "F-score", "Accuracy"],
-		loc = 2, bbox_to_anchor = [1.7, 1.033])
-	# save png
-	png = "./image/%s.%s.pca_%s.%d_fold.png" % (os.path.basename(args.data),
-		args.model, str(args.pca), args.cv_folds)
-	#pyplot.show()
-	pyplot.savefig(png)
-	pyplot.close()
-	# save txt, three of them
-	txt = "./output/%s.%s.pca_%s.%d_fold.%%s.txt" % (os.path.basename(args.data),
-		args.model, str(args.pca), args.cv_folds)
-	with open(txt % "overview", "w") as fh:
-		print("#precision\tf_score\taccuracy", file = fh)
-		for ns in cv_res:
-			print("\t".join(["%f" % ns[i] for i in ["precision", "f", "accuracy"]]),
-				file = fh)
-	with open(txt % "precision", "w") as fh:
-		for label in uniq_labels:
-			el, = le.transform([label])
-			print("\t".join([label] + ["%f" % ns["precision_class"][el] for ns in cv_res]),
-				file = fh)
-	with open(txt % "f_score", "w") as fh:
-		for label in uniq_labels:
-			el, = le.transform([label])
-			print("\t".join([label] + ["%f" % ns["f_class"][el] for ns in cv_res]),
-				file = fh)
+	# save text result
+	txt_prefix = os.path.join(args.output_txt_dir, args.output_str)
+	cv.savetxt(txt_prefix, uniq_labels, lab_encoder)
+	
+	# save plots
+	png_prefix = os.path.join(args.output_png_dir, args.output_str)
+	cv.savetxt(txt_prefix, uniq_labels, lab_encoder)
+	boxplot_title = "%s, classifier=%s, dr=%s(%s), n_fold=%d" \
+		% (os.path.basename(args.data), args.classifier,
+		args.dim_reduc, str(args.reduce_dim_to), args.cv_folds)
+	cv.savefig_boxplot(png_prefix, uniq_labels, lab_encoder,
+		title = boxplot_title)
+	return
 
 
 if __name__ == "__main__":

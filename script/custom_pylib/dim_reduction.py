@@ -61,29 +61,38 @@ class LSDR(DimensionReductionBase):
 		# when training data passed to fit()
 		super(LSDR, self).__init__(*ka, **kw)
 
-
 #	def fit(self, X, Y):
 #		pass
 #
-#
 #	def transform(self, X):
 #		pass
-#
 #
 #	def fit_transform(self, X, Y):
 #		pass
 
 
 def get_dim_reduction_object(model, reduce_dim_to):
-	if reduce_dim_to <= 0:
-		raise ValueError("reduce_dim_to must be positive")
-	if model is None:
+	"""
+	factory function of dimension reduction family objects;
+	returned object must support fit(), transform()
+	and fit_transform() as interface;
+	thus the caller does not have to know what types of models we have;
+	all such information is organized here.
+	"""
+	if model == "none":
+		# if no dim reduction,
+		# reduce_dim_to is omitted even invalid values
 		return Plain()
-	elif model == "pca":
-		return PCA(n_components = reduce_dim_to)
-	elif model == "lda":
-		return LDA(n_components = reduce_dim_to)
-	elif model == "lsdr":
-		return LSDR(reduce_dim_to = reduce_dim_to)
 	else:
-		raise ValueError("unrecognized model '%s'" % model)
+		# check reduce_dim_to value
+		if reduce_dim_to <= 0:
+			raise ValueError("reduce_dim_to must be positive")
+		# select model
+		if model == "pca":
+			return PCA(n_components = reduce_dim_to)
+		elif model == "lda":
+			return LDA(n_components = reduce_dim_to)
+		elif model == "lsdr":
+			return LSDR(reduce_dim_to = reduce_dim_to)
+		else:
+			raise ValueError("unrecognized model '%s'" % model)
