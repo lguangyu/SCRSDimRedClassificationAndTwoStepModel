@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
+import numpy
+import sklearn.preprocessing
 import sklearn.decomposition
 import sklearn.discriminant_analysis
+# HSIC LSDR
+from . import HSIC_LSDR
 
 
 class DimensionReductionBase(object):
@@ -60,15 +64,34 @@ class LSDR(DimensionReductionBase):
 		# n_clusters can be acquired
 		# when training data passed to fit()
 		super(LSDR, self).__init__(*ka, **kw)
+		self.reduce_dim_to = reduce_dim_to
 
-#	def fit(self, X, Y):
-#		pass
-#
-#	def transform(self, X):
-#		pass
-#
-#	def fit_transform(self, X, Y):
-#		pass
+
+	def fit(self, X, Y):
+		# num of classes in labels (Y)
+		self.num_of_clusters = len(numpy.unique(Y))
+		# self.db is a local storage
+		self.db = dict(
+			X = X,
+			Y = Y,
+			num_of_clusters = self.num_of_clusters,
+			q = self.reduce_dim_to
+		)
+		self.sdr = HSIC_LSDR.LSDR(self.db)
+		self.sdr.train()
+		return
+
+
+	def transform(self, X):
+		# on test dataset
+		scaled_X = sklearn.preprocessing.scale(X)
+		W = self.sdr.get_projection_matrix()
+		return numpy.dot(scaled_X, W)
+
+
+	def fit_transform(self, X, Y):
+		self.fit(X, Y)
+		return self.sdr.get_reduced_dim_data()
 
 
 def get_dim_reduction_object(model, reduce_dim_to):

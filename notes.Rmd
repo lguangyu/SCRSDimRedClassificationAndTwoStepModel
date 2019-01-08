@@ -328,18 +328,19 @@ done
 ![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.dr_none_none.10_fold.png)
 
 
-<!-- # HSIC Dimenstion Reduction (26)
+# HSIC Dimenstion Reduction (26)
 
 As known ground truth, use `--num-clusters=26 --reduce-dims-to=26`.
 
 
 ```bash
-for model in {gnb,lr,lda,svm_lin,svm_rbf}; do
+for classifier in {gnb,lr,lda,svm_lin,svm_rbf}; do
 	for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
 		python3 ./script/t1_methods.py \
-			--data ./data/$file".normalized_l2.data.tsv.lsdr.tsv" \
+			--data ./data/$file".normalized_l2.data.tsv" \
 			--meta ./data/$file".normalized_l2.meta.tsv" \
-			--model $model
+			--classifier $classifier \
+			--dim-reduc lsdr --reduce-dims-to 26
 	done
 done
 ```
@@ -348,75 +349,75 @@ done
 
 ### Exponential phase
 
-![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.gnb.pca_none.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.gnb.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 1
 
-![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.gnb.pca_none.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.gnb.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 2
 
-![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.gnb.pca_none.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.gnb.dr_lsdr_26.10_fold.png)
 
 
 ## Logistic Regression (LR)
 
 ### Exponential phase
 
-![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.lr.pca_none.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lr.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 1
 
-![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.lr.pca_none.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lr.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 2
 
-![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.lr.pca_none.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lr.dr_lsdr_26.10_fold.png)
 
 
 ## Linear Discriminant Analysis (LDA)
 
 ### Exponential phase
 
-![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.lda.pca_none.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.lda.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 1
 
-![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.lda.pca_none.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.lda.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 2
 
-![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.lda.pca_none.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lda.dr_lsdr_26.10_fold.png)
 
 
 ## Linear Support Vector Machine (SVM)
 
 ### Exponential phase
 
-![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.svm_lin.pca_none.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.svm_lin.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 1
 
-![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.svm_lin.pca_none.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.svm_lin.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 2
 
-![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.svm_lin.pca_none.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_lin.dr_lsdr_26.10_fold.png)
 
 
 ## Kernel Support Vector Machine (SVM + RBF kernel)
 
 ### Exponential phase
 
-![](./image/EXPONENT1-50.normalized_l2.data.tsv.lsdr.tsv.svm_rbf.pca_none.10_fold.png)
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.svm_rbf.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 1
 
-![](./image/PLATFORM1-50.normalized_l2.data.tsv.lsdr.tsv.svm_rbf.pca_none.10_fold.png)
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.svm_rbf.dr_lsdr_26.10_fold.png)
 
 ### Platform phase 2
 
-![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.svm_rbf.pca_none.10_fold.png) -->
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.dr_lsdr_26.10_fold.png)
 
 
 

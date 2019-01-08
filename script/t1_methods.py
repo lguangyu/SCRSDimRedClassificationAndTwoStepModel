@@ -5,8 +5,6 @@ import sys
 import numpy
 import argparse
 import sklearn.preprocessing
-import custom_pylib.cv_split
-import custom_pylib.dim_reduction
 import custom_pylib.cross_validation
 
 

@@ -14,14 +14,19 @@ output/
 
 # development
 develop/
+# currently in development, include upon finish
+script/custom_pylib/HSIC_LSDR/
 
 # other junk
 *.swp
 .DS_Store
 .Rhistory
+tmp/
 
+
+################################################################################
 # GITHUB python template
-#
+################################################################################
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
