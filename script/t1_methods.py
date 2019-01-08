@@ -132,16 +132,25 @@ def main():
 	uniq_labels.sort()
 	le, encoded_l = encode_labels(labels)
 
-	# cross validation
+	# data split for cross validation
+	# generate masks
 	cv_data_masks, cv_test_masks = cv_equal_classes(encoded_l, args.cv_folds)
-	if args.pca != "none":
-		pca, data = pca_reduce_dimension(data, args.pca)
 
-	# cross validation
+	# run cross validation
 	cv_res = []
 	for dmsk, tmsk in zip(cv_data_masks, cv_test_masks):
-		model = cv_model_fit(args.model, data[dmsk], encoded_l[dmsk])
-		_test_res = cv_model_test(model, data[tmsk], encoded_l[tmsk])
+		# get cv data
+		train_data	= data[dmsk]
+		test_data	= data[tmsk]
+		train_label	= encoded_l[dmsk]
+		test_label	= encoded_l[tmsk]
+		if args.pca != "none":
+			# do dimension reduction on only train data
+			pca, train_data = pca_reduce_dimension(train_data, args.pca)
+			# then transform test data
+			test_data = pca.transform(test_data)
+		model = cv_model_fit(args.model, train_data, train_label)
+		_test_res = cv_model_test(model, test_data, test_label)
 		cv_res.append(_test_res)
 
 	# plot
@@ -189,11 +198,30 @@ def main():
 	ax_all.set_ylim(-0.05, 1.05)
 	ax_all.legend(handles = figs, labels = ["Precision", "F-score", "Accuracy"],
 		loc = 2, bbox_to_anchor = [1.7, 1.033])
-	output = "./image/%s.%s.pca_%s.%d_fold.png" % (os.path.basename(args.data),
+	# save png
+	png = "./image/%s.%s.pca_%s.%d_fold.png" % (os.path.basename(args.data),
 		args.model, str(args.pca), args.cv_folds)
 	#pyplot.show()
-	pyplot.savefig(output)
+	pyplot.savefig(png)
 	pyplot.close()
+	# save txt, three of them
+	txt = "./output/%s.%s.pca_%s.%d_fold.%%s.txt" % (os.path.basename(args.data),
+		args.model, str(args.pca), args.cv_folds)
+	with open(txt % "overview", "w") as fh:
+		print("#precision\tf_score\taccuracy", file = fh)
+		for ns in cv_res:
+			print("\t".join(["%f" % ns[i] for i in ["precision", "f", "accuracy"]]),
+				file = fh)
+	with open(txt % "precision", "w") as fh:
+		for label in uniq_labels:
+			el, = le.transform([label])
+			print("\t".join([label] + ["%f" % ns["precision_class"][el] for ns in cv_res]),
+				file = fh)
+	with open(txt % "f_score", "w") as fh:
+		for label in uniq_labels:
+			el, = le.transform([label])
+			print("\t".join([label] + ["%f" % ns["f_class"][el] for ns in cv_res]),
+				file = fh)
 
 
 if __name__ == "__main__":

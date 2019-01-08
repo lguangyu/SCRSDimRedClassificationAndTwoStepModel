@@ -55,11 +55,11 @@ for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
 done
 ```
 
-![PCA of exponential phase](./image/EXPONENT1-50.normalized_l2.data.tsv.pac.png)
+![PCA of exponential phase](./image/EXPONENT1-50.normalized_l2.data.tsv.pca.png)
 
-![PCA of platform phase 1](./image/PLATFORM1-50.normalized_l2.data.tsv.pac.png)
+![PCA of platform phase 1](./image/PLATFORM1-50.normalized_l2.data.tsv.pca.png)
 
-![PCA of platform phase 2](./image/PLATFORM2-50.normalized_l2.data.tsv.pac.png)
+![PCA of platform phase 2](./image/PLATFORM2-50.normalized_l2.data.tsv.pca.png)
 
 
 # Exploratory 1
@@ -301,7 +301,7 @@ done
 ![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.pca_none.10_fold.png)
 
 
-# HSIC Dimenstion Reduction (26)
+<!-- # HSIC Dimenstion Reduction (26)
 
 As known ground truth, use `--num-clusters=26 --reduce-dims-to=26`.
 
@@ -389,7 +389,7 @@ done
 
 ### Platform phase 2
 
-![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.svm_rbf.pca_none.10_fold.png)
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.lsdr.tsv.svm_rbf.pca_none.10_fold.png) -->
 
 
 
@@ -398,4 +398,5 @@ done
 
 ## 2018-12-28
 
-* In cross-validataion, dimension reduction on full dataset then split, or split first then do on training set only?
+* In cross-validataion, dimension reduction on full dataset then split, or split first then do on training set only? <b>A: should do only on training sets (i.e. consider as a part of training).</b>
+

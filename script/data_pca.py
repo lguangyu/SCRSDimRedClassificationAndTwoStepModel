@@ -99,6 +99,6 @@ if __name__ == "__main__":
 
 	plot_pca(fig, data, labels)
 	#pyplot.show()
-	output = "image/" + os.path.basename(args.data) + ".pac.png"
+	output = "image/" + os.path.basename(args.data) + ".pca.png"
 	pyplot.savefig(output)
 	pyplot.close()
