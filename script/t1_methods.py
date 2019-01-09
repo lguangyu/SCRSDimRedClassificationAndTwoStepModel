@@ -19,6 +19,8 @@ def get_args():
 		help = "choice of fitting model (required)")
 	ap.add_argument("-f", "--cv-folds", type = int, metavar = "int", default = 10,
 		help = "n-fold cross validation (default: 10)")
+	ap.add_argument("-p", "--with-permutation", action = "store_true",
+		help = "randomly permutate samples (default: off)")
 	ap.add_argument("-R", "--dim-reduc", type = str,
 		default = "none", choices = ["none", "pca", "lda", "lsdr"],
 		help = "choosing dimension reduction method (default: none)")
@@ -53,8 +55,8 @@ def get_args():
 
 def print_runinfo(args, fh = sys.stderr):
 	arg_vars = vars(args)
-	for key in ["data", "meta", "classifier", "cv_folds", "dim_reduc",
-		"reduce_dim_to"]:
+	for key in ["data", "meta", "classifier", "cv_folds",
+		"with_permutation", "dim_reduc", "reduce_dim_to"]:
 		print(key + ":", arg_vars[key], file = fh)
 
 
@@ -94,6 +96,7 @@ def main():
 	# cross validation
 	cv = custom_pylib.cross_validation.CrossValidation(
 		classifier = args.classifier, n_fold = args.cv_folds,
+		permutation = ("random" if args.with_permutation else "disable"),
 		dim_reduc = args.dim_reduc, reduce_dim_to = args.reduce_dim_to)
 	cv.run_cv(data, encoded_labels)
 	cv_res = cv.get_result()

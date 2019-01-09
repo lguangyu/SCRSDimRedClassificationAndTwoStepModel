@@ -8,5 +8,7 @@ for model in {gnb,lr,lda,svm_lin,svm_rbf}; do
 			--meta ./data/$file".normalized_l2.meta.tsv" \
 			--classifier $model \
 			--dim-reduc lsdr --reduce-dim-to 26
+			#--output-txt-dir ./develop/with_scale \
+			#--output-png-dir ./develop/with_scale \
 	done
 done

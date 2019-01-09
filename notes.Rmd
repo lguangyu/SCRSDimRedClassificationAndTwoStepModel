@@ -5,6 +5,7 @@ date: October 2018
 output:
   html_document:
     toc: true
+    toc_float: true
     toc_depth: 3
 ---
 
@@ -428,3 +429,30 @@ done
 
 * In cross-validataion, dimension reduction on full dataset then split, or split first then do on training set only? <b>A: should do only on training sets (i.e. consider as a part of training).</b>
 
+## 2019-01-07
+
+Revised process:
+
+* dimension reduction on training set (this trains a dimensionality reducer)
+* dimension reduction on test set (using the reducer trained above)
+* train the classifier using <b>dim-reduced</b> training set
+* predict labels of <b>dim-reduced</b> test set using the trained classifier
+* evaluate classifier performance
+
+It is suggested, transform test set using LSDR need to scale the test set first;
+i.e. `sklearn.preprocessing.scale(X_test)`.
+It seems the former nice results were overfitting.
+But, the new results seems outcompeted by traditional method LDA-PCA(26).
+Reasons unknown.
+
+
+## 2019-01-09
+
+LSDR only:
+
+* entire dataset is scaled before split into training/test sets
+
+This improved a little performance than scale training set and test set separately.
+However, the traditional LDA-PCA(26) still seems the best.
+Reproduce the overfitting results (LSDR first, then traditional methods w/o dim-reduction) succesful.
+No evidence of coding error found.

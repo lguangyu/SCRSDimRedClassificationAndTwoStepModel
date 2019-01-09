@@ -3,6 +3,7 @@
 import sys
 import os
 import sklearn.metrics
+import sklearn.preprocessing
 from . import cv_split, dim_reduction, classifier, cv_result_plot
 
 
@@ -13,9 +14,10 @@ class CrossValidation(object):
 	_CLASSES_KEYS_ = ["precision", "fscore"]
 
 	def __init__(self, classifier, n_fold = 10,
-		dim_reduc = None, reduce_dim_to = None):
+		permutation = "disable", dim_reduc = None, reduce_dim_to = None):
 		#
 		super(CrossValidation, self).__init__()
+		self.permutation = permutation
 		self.classifier = classifier
 		self.n_fold = n_fold
 		self.dim_reduc = dim_reduc
@@ -23,19 +25,31 @@ class CrossValidation(object):
 		self.result = []
 
 
+	def _data_preprocess(self, X, Y):
+		dr_cls = dim_reduction.get_dimreduc_class_type(self.dim_reduc)
+		if dr_cls.is_require_scale():
+			# replace X with scaled
+			X = sklearn.preprocessing.scale(X)
+		return X, Y
+
+
 	def run_cv(self, X, Y):
 		"""
 		split dataset then run cross validation
 		"""
 		self.result.clear()
+		# preprocess data if needed
+		# for example, LSDR requires the data scaled
+		X, Y = self._data_preprocess(X, Y)
 		# split data for cross validation
-		escv = cv_split.EvenSplitCrossValidation(X, Y, self.n_fold)
+		escv = cv_split.EvenSplitCrossValidation(X, Y, self.n_fold,
+			permutation = self.permutation)
 		for train_data, test_data, train_label, test_label in escv:
 			# dim reduction
 			# self.dim_reduc returns a Plain object
 			# which is a dummy dim reduction (does nothing)
 			# just for avoiding the if ... else ... here
-			dr = dim_reduction.get_dim_reduction_object(\
+			dr = dim_reduction.get_dimreduc_object(\
 				model = self.dim_reduc, reduce_dim_to = self.reduce_dim_to)
 			# dim reducetion on train data, then transform test data
 			train_data = dr.fit_transform(train_data, train_label)
