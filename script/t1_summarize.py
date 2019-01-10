@@ -75,9 +75,12 @@ def summarize_dataset_results(args, dataset):
 				fname = os.path.join(args.input_dir,
 					"%s.%s.dr_%s.10_fold.overall.txt"\
 					% (dataset, cls["id"], dr["id"]))
-				res = get_results(fname, "accuracy", args.delimiter)
-				formatted = "%.3f (sd: %.3f)" % (res.mean(), res.std())
-				line.append(formatted)
+				try:
+					res = get_results(fname, "accuracy", args.delimiter)
+					res_str = "%.3f (sd: %.3f)" % (res.mean(), res.std())
+					line.append(res_str)
+				except:
+					line.append("N/A")
 			print((args.delimiter).join(line), file = fh)
 		return
 
