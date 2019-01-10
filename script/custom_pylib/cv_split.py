@@ -9,8 +9,10 @@ class EvenSplitCrossValidation(object):
 		"""
 		generate dataset splits for cross validation;
 		labels must be encoded;
-		permutation can be: 'disable', 'random' or an permutation table array
+		permutation can be: 'disable', 'random', integer or an array
 		if 'random', randomly generate the permutation table
+		if integer, using it as seed and generate the permutation table
+		if array, use as permutation table
 		"""
 		super(EvenSplitCrossValidation, self).__init__()
 		# ensure copy below two as numpy array
@@ -25,17 +27,15 @@ class EvenSplitCrossValidation(object):
 
 
 	def _permutate_inplace(self, permutation):
-		"""
-		only permutate data if permutation = True;
-		if so, if permutation_table is None, randomly generate;
-		else, use specified one
-		"""
 		if permutation == "disable":
-
+			# do nothing
 			return None
 		else:
 			# get permutation table
 			if permutation == "random":
+				_table = numpy.random.permutation(len(self.labels))
+			elif isinstance(permutation, int):
+				numpy.random.seed(permutation)
 				_table = numpy.random.permutation(len(self.labels))
 			else:
 				_table = permutation.copy()

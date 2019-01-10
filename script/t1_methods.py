@@ -19,8 +19,9 @@ def get_args():
 		help = "choice of fitting model (required)")
 	ap.add_argument("-f", "--cv-folds", type = int, metavar = "int", default = 10,
 		help = "n-fold cross validation (default: 10)")
-	ap.add_argument("-p", "--with-permutation", action = "store_true",
-		help = "randomly permutate samples (default: off)")
+	ap.add_argument("-p", "--permutation", type = str,
+		metavar = "disable|random|int", default = "disable",
+		help = "permutate samples, can be disable, random or specify a seed (int) (default: disable)")
 	ap.add_argument("-R", "--dim-reduc", type = str,
 		default = "none", choices = ["none", "pca", "lda", "lsdr"],
 		help = "choosing dimension reduction method (default: none)")
@@ -34,8 +35,24 @@ def get_args():
 		help = "output png results to this dir (default: image)")
 	args = ap.parse_args()
 	# check args
+	_check_args_cv_folds(args)
+	_check_args_dim_reduction(args)
+	_check_args_permutation(args)
+	# format output fname string
+	# excluding folder and extension
+	args.output_str = "%s.%s.dr_%s_%s.%d_fold" % (
+		os.path.basename(args.data), args.classifier,
+		args.dim_reduc, str(args.reduce_dim_to), args.cv_folds)
+	return args
+
+
+def _check_args_cv_folds(args):
 	if args.cv_folds <= 0:
 		raise ValueError("--cv-folds must be positive")
+	return
+
+
+def _check_args_dim_reduction(args):
 	if args.dim_reduc == "none":
 		args.reduce_dim_to = "none" # set this to none as omitted
 	else:
@@ -45,18 +62,20 @@ def get_args():
 		args.reduce_dim_to = int(args.reduce_dim_to)
 		if args.reduce_dim_to <= 0:
 			raise ValueError("--reduce-dim-to must be positive")
-	# format output fname string
-	# excluding folder and extension
-	args.output_str = "%s.%s.dr_%s_%s.%d_fold" % (
-		os.path.basename(args.data), args.classifier,
-		args.dim_reduc, str(args.reduce_dim_to), args.cv_folds)
-	return args
+	return
+
+
+def _check_args_permutation(args):
+	if args.permutation not in ["disable", "random"]:
+		# try setting as seed
+		args.permutation = int(args.permutation)
+	return
 
 
 def print_runinfo(args, fh = sys.stderr):
 	arg_vars = vars(args)
 	for key in ["data", "meta", "classifier", "cv_folds",
-		"with_permutation", "dim_reduc", "reduce_dim_to"]:
+		"permutation", "dim_reduc", "reduce_dim_to"]:
 		print(key + ":", arg_vars[key], file = fh)
 
 
@@ -96,7 +115,7 @@ def main():
 	# cross validation
 	cv = custom_pylib.cross_validation.CrossValidation(
 		classifier = args.classifier, n_fold = args.cv_folds,
-		permutation = ("random" if args.with_permutation else "disable"),
+		permutation = ("random" if args.permutation else "disable"),
 		dim_reduc = args.dim_reduc, reduce_dim_to = args.reduce_dim_to)
 	cv.run_cv(data, encoded_labels)
 	cv_res = cv.get_result()

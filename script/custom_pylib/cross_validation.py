@@ -59,19 +59,29 @@ class CrossValidation(object):
 				self.classifier, data = train_data)
 			# train classifier
 			cls.fit(train_data, train_label)
-			predict_label = cls.predict(test_data)
-			# evaluate
-			_res = self._evaluate(test_label, predict_label)
+			# check training
+			self._evaluate_training(cls, train_data, train_label)
+			# testing
+			_res = self._evaluate_testing(cls, test_data, test_label)
 			# save results
 			self.result.append(_res)
 		return
 
 
-	def _evaluate(self, y_true, y_pred):
+	def _evaluate_training(self, classifier, x, y_true):
+		y_pred = classifier.predict(x)
+		accuracy = sklearn.metrics.accuracy_score(y_true, y_pred)
+		print("training accuracy: %.3f" % accuracy, file = sys.stderr)
+		return
+
+
+	def _evaluate_testing(self, classifier, x, y_true):
 		"""
 		evaluate performance in each cross validation split
 		"""
+		y_pred = classifier.predict(x)
 		acc_all = sklearn.metrics.accuracy_score(y_true, y_pred)
+		print("test accuracy: %.3f" % acc_all, file = sys.stderr)
 		prc_all = sklearn.metrics.precision_score(y_true, y_pred,
 			average = "micro")
 		prc_cls = sklearn.metrics.precision_score(y_true, y_pred,

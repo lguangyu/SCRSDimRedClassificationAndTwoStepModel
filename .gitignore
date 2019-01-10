@@ -15,7 +15,7 @@ output/
 # development
 develop/
 # currently in development, include upon finish
-script/custom_pylib/HSIC_LSDR/
+#script/custom_pylib/HSIC_LSDR/
 
 # other junk
 *.swp

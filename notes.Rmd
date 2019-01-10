@@ -298,6 +298,34 @@ done
 
 ![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_lin.dr_none_none.10_fold.png)
 
+### SVM: dimension reduction: PCA (26)
+
+#### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.svm_lin.dr_pca_26.10_fold.png)
+
+#### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.svm_lin.dr_pca_26.10_fold.png)
+
+#### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_lin.dr_pca_26.10_fold.png)
+
+### SVM: dimension reduction: LDA (26)
+
+#### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.svm_lin.dr_lda_26.10_fold.png)
+
+#### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.svm_lin.dr_lda_26.10_fold.png)
+
+#### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_lin.dr_lda_26.10_fold.png)
+
 
 ## Kernel Support Vector Machine (SVM + RBF kernel)
 
@@ -327,6 +355,34 @@ done
 #### Platform phase 2
 
 ![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.dr_none_none.10_fold.png)
+
+### KSVM(RBF): dimension reduction: PCA (26)
+
+#### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.svm_rbf.dr_pca_26.10_fold.png)
+
+#### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.svm_rbf.dr_pca_26.10_fold.png)
+
+#### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.dr_pca_26.10_fold.png)
+
+### KSVM(RBF): dimension reduction: LDA (26)
+
+#### Exponential phase
+
+![](./image/EXPONENT1-50.normalized_l2.data.tsv.svm_rbf.dr_lda_26.10_fold.png)
+
+#### Platform phase 1
+
+![](./image/PLATFORM1-50.normalized_l2.data.tsv.svm_rbf.dr_lda_26.10_fold.png)
+
+#### Platform phase 2
+
+![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.dr_lda_26.10_fold.png)
 
 
 # HSIC Dimenstion Reduction (26)
@@ -429,6 +485,7 @@ done
 
 * In cross-validataion, dimension reduction on full dataset then split, or split first then do on training set only? <b>A: should do only on training sets (i.e. consider as a part of training).</b>
 
+
 ## 2019-01-07
 
 Revised process:
@@ -444,6 +501,13 @@ i.e. `sklearn.preprocessing.scale(X_test)`.
 It seems the former nice results were overfitting.
 But, the new results seems outcompeted by traditional method LDA-PCA(26).
 Reasons unknown.
+
+<font color="#FF0000">ABOUT SVM USED</font>
+
+Checked the `sklearn.svm` documentation,
+
+* Linear SVM (`sklearn.svm.LinearSVC(multi_class="ovr")`) is "one-over-rest" scheme for multiclass classifications
+* General SVM (`sklearn.svm.SVC(kernel="rbf")`) is "one-to-one" scheme for multiclass classifications; need manual implementation for "one-over-rest"
 
 
 ## 2019-01-09
