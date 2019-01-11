@@ -4,6 +4,7 @@ import numpy
 import os
 import sys
 import argparse
+import sklearn.preprocessing
 
 
 def get_args():
@@ -14,43 +15,55 @@ def get_args():
 	return ap.parse_args()
 
 
-def parse_file(fname, normalize):
+def load_file(fname, extract_column = 1):
+	# not using numpy.loadtxt since contains unicode char (?)
 	with open(fname, "r") as fh:
-		d = fh.read().splitlines()
-	d = [i.split("\t")[1] for i in d]
-	d = numpy.asarray(d, dtype = float)
-	if normalize == "none":
-		pass
-	elif normalize == "l1":
-		d = d / numpy.abs(d).sum()
-	elif normalize == "l2":
-		scale = numpy.sqrt(numpy.dot(d, d))
-		d = d / scale
-	elif normalize == "minmax":
-		dmin, dmax = d.min(), d.max()
-		scale = dmax - dmin
-		d = (d - dmin) / scale
-	elif normalize == "area":
-		d = d / d.sum()
+		lines = fh.read().splitlines()
+	splitted = [l.split("\t") for l in lines]
+	data = list(map(lambda i: i[extract_column], splitted))
+	data = numpy.asarray(data_text, dtype = float)
+	return data
+
+
+def normalize(data, norm = "none"):
+	"""
+	returned normalized data
+	norm: none, l1, l2, minmax, area
+	none does nothing
+	"""
+	if norm == "none":
+		return data
+	elif norm in ["l1", "l2"]:
+		# as literal
+		return sklearn.preprocessing.normalize(data, norm = norm)
+	elif norm == "minmax":
+		# normalize to min = 0, max = 1
+		_min, _max = data.min(), data.max()
+		_range = _max - _min
+		return (data - _min) / _range
+	elif norm == "area":
+		# note area is not identical to l1
+		# it considers negative numbers
+		return data / data.sum()
 	else:
-		raise ValueError("unrecognized normalization method")
-	return d
+		raise ValueError("unrecognized method '%s'" % norm)
+	return
 
 
 def combine_dataset(path, name, normalize):
-	# combine a dataset to a single file
+	# combine a dataset (multiple files) to a single file
 	fh_meta = open("./data/%s.normalized_%s.meta.tsv" % (name, normalize), "w")
 	fh_data = open("./data/%s.normalized_%s.data.tsv" % (name, normalize), "w")
 	print("%s" % name, file = sys.stderr)
 	for s in os.scandir(path):
 		if s.is_dir():
-			print("%s" % s.name, file = sys.stderr)
 			for f in os.scandir(s.path):
 				if f.is_file():
 					#print("processing: %s" % f.path, file = sys.stderr)
-					# label, file
+					# label, file in meta data
 					print("\t".join([s.name, f.name]), file = fh_meta)
-					data = parse_file(f.path, normalize)
+					data = parse_file(f.path, 1) # intensity is 2nd column (1)
+					data = normalize(data, normalize)
 					print("\t".join(["%f" % i for i in data]), file = fh_data)
 	fh_meta.close()
 	fh_data.close()

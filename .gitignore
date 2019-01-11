@@ -8,6 +8,7 @@ raw/
 image/
 intermediate/
 output/
+summary/
 
 # output html
 *.html

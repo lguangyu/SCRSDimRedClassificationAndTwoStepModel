@@ -281,6 +281,15 @@ for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
 		--data ./data/$file".normalized_l2.data.tsv" \
 		--meta ./data/$file".normalized_l2.meta.tsv" \
 		--classifier $classifier
+	for dimred in {pca,lda}; do
+		for ndims in {20,26,40}; do
+			python3 ./script/t1_methods.py \
+				--data ./data/$file".normalized_l2.data.tsv" \
+				--meta ./data/$file".normalized_l2.meta.tsv" \
+				--classifier $classifier \
+				--dim-reduc $dimred --reduce-dim-to $ndims
+		done
+	done
 done
 ```
 
@@ -333,12 +342,21 @@ Try SVM `(sklearn.svm.SVM(kernel = "rbf", gamma = <median Euclidean training set
 10-fold cross-validation, each class evenly splited into each sets.
 
 ```bash
-classifier="svm_lrbf"
+classifier="svm_rbf"
 for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
 	python3 ./script/t1_methods.py \
 		--data ./data/$file".normalized_l2.data.tsv" \
 		--meta ./data/$file".normalized_l2.meta.tsv" \
 		--classifier $classifier
+	for dimred in {pca,lda}; do
+		for ndims in {20,26,40}; do
+			python3 ./script/t1_methods.py \
+				--data ./data/$file".normalized_l2.data.tsv" \
+				--meta ./data/$file".normalized_l2.meta.tsv" \
+				--classifier $classifier \
+				--dim-reduc $dimred --reduce-dim-to $ndims
+		done
+	done
 done
 ```
 
@@ -477,6 +495,13 @@ done
 ![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.dr_lsdr_26.10_fold.png)
 
 
+# Overview (Accuracy)
+
+![](./summary/EXPONENT1-50.normalized_l2.data.tsv.summary.accuracy.png)
+
+![](./summary/PLATFORM1-50.normalized_l2.data.tsv.summary.accuracy.png)
+
+![](./summary/PLATFORM2-50.normalized_l2.data.tsv.summary.accuracy.png)
 
 
 # NOTES
@@ -520,3 +545,124 @@ This improved a little performance than scale training set and test set separate
 However, the traditional LDA-PCA(26) still seems the best.
 Reproduce the overfitting results (LSDR first, then traditional methods w/o dim-reduction) succesful.
 No evidence of coding error found.
+
+
+## 2019-01-11
+
+<b>As a quick conclusion, the LSDR seems is overfitting, or, the data size is insufficient.</b>
+
+This conclusion was made via comparison the training accuracy and testing accuracy.
+In addition, <b>two different strategies</b> were tried, respectively:
+
+(1) Split, then train dimension reduction on the training set ONLY, before transfrom the testing set.
+The pseudocode is:
+
+```
+foreach in (splitted dataset) /* 10-fold cv */
+{
+    fit lsdr to (train_X, train_Y);
+    train_X_dr <- dim-reduct on train_X;
+    test_X_dr <- dim-reduct on test_X;
+    /* classifier training */
+    fit classifier to (train_X_dr, train_Y);
+    /* train accuracy */
+    pred_train_Y <- predict on train_X_dr;
+    train_accuracy <- accuracy(train_Y, pred_train_Y);
+    /* test accuracy */
+    pred_test_Y <- predict on test_X_dr;
+    test_accuracy <- accuracy(test_Y, pred_test_Y);
+}
+```
+
+Results were:
+
+```
+data: data/EXPONENT1-50.normalized_l2.data.tsv
+meta: data/EXPONENT1-50.normalized_l2.meta.tsv
+classifier: lda
+cv_folds: 10
+permutation: random
+dim_reduc: lsdr
+reduce_dim_to: 25
+training accuracy: 0.989
+test accuracy: 0.614
+training accuracy: 0.988
+test accuracy: 0.678
+training accuracy: 0.988
+test accuracy: 0.637
+training accuracy: 0.991
+test accuracy: 0.646
+training accuracy: 0.988
+test accuracy: 0.615
+training accuracy: 0.988
+test accuracy: 0.539
+training accuracy: 0.987
+test accuracy: 0.552
+training accuracy: 0.988
+test accuracy: 0.592
+training accuracy: 0.987
+test accuracy: 0.697
+training accuracy: 0.987
+test accuracy: 0.643
+```
+
+(2) Train dimension reduction on whole dataset, then split data for 10-fold CV;
+In each fold, keep the trained dimension reduction unchanged, while transforming
+training and testing data separately.
+The pseudocode is:
+
+```
+fit lsdr to (all_X, all_Y);
+for each in (10-fold cv, splitted dataset)
+{
+    train_X_dr <- dim-reduct on train_X;
+    test_X_dr <- dim-reduct on test_X;
+    /* classifier training */
+    fit classifier to (train_X_dr, train_Y);
+    /* train accuracy */
+    pred_train_Y <- predict on train_X_dr;
+    train_accuracy <- accuracy(train_Y, pred_train_Y);
+    /* test accuracy */
+    pred_test_Y <- predict on test_X_dr;
+    test_accuracy <- accuracy(test_Y, pred_test_Y);
+}
+```
+
+Results were:
+
+```
+data: data/EXPONENT1-50.normalized_l2.data.tsv
+meta: data/EXPONENT1-50.normalized_l2.meta.tsv
+classifier: lda
+cv_folds: 10
+permutation: random
+dim_reduc: lsdr
+reduce_dim_to: 25
+training accuracy: 0.985
+test accuracy: 0.970
+training accuracy: 0.985
+test accuracy: 0.965
+training accuracy: 0.985
+test accuracy: 0.979
+training accuracy: 0.987
+test accuracy: 0.965
+training accuracy: 0.985
+test accuracy: 0.986
+training accuracy: 0.985
+test accuracy: 0.957
+training accuracy: 0.987
+test accuracy: 0.979
+training accuracy: 0.985
+test accuracy: 0.986
+training accuracy: 0.986
+test accuracy: 0.986
+training accuracy: 0.984
+test accuracy: 0.987
+```
+
+Note in (1) the classifier did constantly perfect on training set but pool on testing set;
+This is precisely overfitting.
+Meanwhile, training on the entire dataset generates far more better results.
+
+
+In addition, added tabularization of the results for overview comparisons.

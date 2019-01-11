@@ -41,6 +41,13 @@ class CrossValidation(object):
 		# preprocess data if needed
 		# for example, LSDR requires the data scaled
 		X, Y = self._data_preprocess(X, Y)
+		########################################################################
+		# this section for testing the performance train dr on all data
+		########################################################################
+		#dr = dim_reduction.get_dimreduc_object(\
+		#	model = self.dim_reduc, reduce_dim_to = self.reduce_dim_to)
+		#dr.fit(X, Y)
+		########################################################################
 		# split data for cross validation
 		escv = cv_split.EvenSplitCrossValidation(X, Y, self.n_fold,
 			permutation = self.permutation)
@@ -49,11 +56,18 @@ class CrossValidation(object):
 			# self.dim_reduc returns a Plain object
 			# which is a dummy dim reduction (does nothing)
 			# just for avoiding the if ... else ... here
+			####################################################################
 			dr = dim_reduction.get_dimreduc_object(\
 				model = self.dim_reduc, reduce_dim_to = self.reduce_dim_to)
 			# dim reducetion on train data, then transform test data
 			train_data = dr.fit_transform(train_data, train_label)
 			test_data = dr.transform(test_data)
+			####################################################################
+			# this section for testing the performance train dr on all data
+			####################################################################
+			#train_data = dr.transform(train_data)
+			#test_data = dr.transform(test_data)
+			####################################################################
 			# classifier
 			cls = classifier.get_classifier_object(\
 				self.classifier, data = train_data)

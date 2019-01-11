@@ -84,7 +84,8 @@ def load_data(fdata, fmeta):
 	with open(fmeta, "r") as fh:
 		meta = fh.read().splitlines()
 	# label is the 1st col in metadata file
-	labels = [i.split("\t")[0] for i in meta]
+	labels = list(map(lambda i: i.split("\t")[0], meta))
+	#labels = [i.split("\t")[0] for i in meta]
 	labels = numpy.asarray(labels, dtype = object)
 	return data, labels
 
@@ -118,7 +119,7 @@ def main():
 		permutation = ("random" if args.permutation else "disable"),
 		dim_reduc = args.dim_reduc, reduce_dim_to = args.reduce_dim_to)
 	cv.run_cv(data, encoded_labels)
-	cv_res = cv.get_result()
+	#cv_res = cv.get_result()
 
 	# save text result
 	txt_prefix = os.path.join(args.output_txt_dir, args.output_str)
@@ -126,8 +127,7 @@ def main():
 	
 	# save plots
 	png_prefix = os.path.join(args.output_png_dir, args.output_str)
-	cv.savetxt(txt_prefix, uniq_labels, lab_encoder)
-	boxplot_title = "%s, classifier=%s, dr=%s(%s), n_fold=%d" \
+	boxplot_title = "%s, classifier=%s, dr=%s(%s), n_fold=%d"\
 		% (os.path.basename(args.data), args.classifier,
 		args.dim_reduc, str(args.reduce_dim_to), args.cv_folds)
 	cv.savefig_boxplot(png_prefix, uniq_labels, lab_encoder,
