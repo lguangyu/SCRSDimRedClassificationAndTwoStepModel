@@ -495,13 +495,55 @@ done
 ![](./image/PLATFORM2-50.normalized_l2.data.tsv.svm_rbf.dr_lsdr_26.10_fold.png)
 
 
-# Overview (Accuracy)
+# Results overview
+
+## Average accuracy
 
 ![](./summary/EXPONENT1-50.normalized_l2.data.tsv.summary.accuracy.png)
 
 ![](./summary/PLATFORM1-50.normalized_l2.data.tsv.summary.accuracy.png)
 
 ![](./summary/PLATFORM2-50.normalized_l2.data.tsv.summary.accuracy.png)
+
+## Train/test accuracy w.r.t. dimension reduction
+
+```bash
+dims_test_dir="output/dims_test"
+mkdir -p $dims_test_dir
+for file in {EXPONENT1-50,PLATFORM1-50,PLATFORM2-50}; do
+	mkdir -p $dims_test_dir/$file
+	for dimred in {pca,lda,lsdr}; do
+		mkdir -p $dims_test_dir/$file/$dimred
+		#for model in {gnb,lr,lda,svm_lin,svm_rbf}; do
+		for model in {svm_lin,svm_rbf}; do
+			mkdir -p $dims_test_dir/$file/$dimred/$model
+			for ndims in {1..30}; do
+				python3 ./script/t1_methods.py \
+					--data ./data/$file".normalized_l2.data.tsv" \
+					--meta ./data/$file".normalized_l2.meta.tsv" \
+					--classifier $model \
+					--dim-reduc $dimred --reduce-dim-to $ndims \
+					--output-txt-dir $dims_test_dir/$file/$dimred/$model \
+					--output-png-dir $dims_test_dir/$file/$dimred/$model
+			done > $dims_test_dir/$file/$dimred/$model/log
+		done
+	done
+done
+# plot
+python3 ./script/plot_dims_test.py $dims_test_dir
+```
+
+### Exponential Phase
+
+![](./image/EXPONENT1-50.dims_test.png)
+
+### Platform phase 1
+
+![](./image/PLATFORM1-50.dims_test.png)
+
+### Platform phase 2
+
+![](./image/PLATFORM2-50.dims_test.png)
 
 
 # NOTES
@@ -664,5 +706,45 @@ Note in (1) the classifier did constantly perfect on training set but pool on te
 This is precisely overfitting.
 Meanwhile, training on the entire dataset generates far more better results.
 
-
 In addition, added tabularization of the results for overview comparisons.
+
+
+## 2019-01-15
+
+Check the train/test accuracy for all combinations of dimension reduction and classifier methods.
+
+In addition, time in training something as below:
+
+
+Reduce dims    EXPONENT1    PLATFORM1    PLATFORM2
+-----------    ---------    ---------    ---------
+1              < 1 min      < 1 min      < 1 min
+2              < 1 min      4 min        < 1 min
+3              < 1 min      14 min       < 1 min
+4              < 1 min      17 min       < 1 min
+5              < 1 min      17 min       < 1 min
+6              < 1 min      17 min       < 1 min
+7              < 1 min      17 min       < 1 min
+8              < 1 min      17 min       < 1 min
+9              < 1 min      17 min       < 1 min
+10             < 1 min      17 min       < 1 min
+11             < 1 min      17 min       < 1 min
+12             < 1 min      17 min       < 1 min
+13             < 1 min      17 min       < 1 min
+14             < 1 min      16 min       < 1 min
+15             < 1 min      7 min        < 1 min
+16             < 1 min      8 min        < 1 min
+17             < 1 min      5 min        < 1 min
+18             < 1 min      4 min        < 1 min
+19             < 1 min      < 1 min      < 1 min
+20             < 1 min      < 1 min      < 1 min
+21             < 1 min      < 1 min      < 1 min
+22             < 1 min      < 1 min      < 1 min
+23             < 1 min      < 1 min      < 1 min
+24             < 1 min      < 1 min      < 1 min
+25             < 1 min      < 1 min      < 1 min
+26             < 1 min      < 1 min      < 1 min
+27             < 1 min      < 1 min      < 1 min
+28             < 1 min      < 1 min      < 1 min
+29             < 1 min      < 1 min      < 1 min
+30             < 1 min      < 1 min      < 1 min

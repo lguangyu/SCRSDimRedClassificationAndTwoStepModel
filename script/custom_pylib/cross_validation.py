@@ -85,7 +85,7 @@ class CrossValidation(object):
 	def _evaluate_training(self, classifier, x, y_true):
 		y_pred = classifier.predict(x)
 		accuracy = sklearn.metrics.accuracy_score(y_true, y_pred)
-		print("training accuracy: %.3f" % accuracy, file = sys.stderr)
+		print("training accuracy: %.3f" % accuracy, file = sys.stdout)
 		return
 
 
@@ -95,7 +95,7 @@ class CrossValidation(object):
 		"""
 		y_pred = classifier.predict(x)
 		acc_all = sklearn.metrics.accuracy_score(y_true, y_pred)
-		print("test accuracy: %.3f" % acc_all, file = sys.stderr)
+		print("test accuracy: %.3f" % acc_all, file = sys.stdout)
 		prc_all = sklearn.metrics.precision_score(y_true, y_pred,
 			average = "micro")
 		prc_cls = sklearn.metrics.precision_score(y_true, y_pred,

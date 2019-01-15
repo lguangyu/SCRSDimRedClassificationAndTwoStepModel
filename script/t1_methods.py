@@ -72,7 +72,7 @@ def _check_args_permutation(args):
 	return
 
 
-def print_runinfo(args, fh = sys.stderr):
+def print_runinfo(args, fh = sys.stdout):
 	arg_vars = vars(args)
 	for key in ["data", "meta", "classifier", "cv_folds",
 		"permutation", "dim_reduc", "reduce_dim_to"]:
