@@ -20,8 +20,8 @@ def get_args():
 	ap.add_argument("-f", "--cv-folds", type = int, metavar = "int", default = 10,
 		help = "n-fold cross validation (default: 10)")
 	ap.add_argument("-p", "--permutation", type = str,
-		metavar = "disable|random|int", default = "disable",
-		help = "permutate samples, can be disable, random or specify a seed (int) (default: disable)")
+		metavar = "disable|random|int", default = "random",
+		help = "permutate samples, can be 'disable', 'random' or an integer as seed (default: random)")
 	ap.add_argument("-R", "--dim-reduc", type = str,
 		default = "none", choices = ["none", "pca", "lda", "lsdr"],
 		help = "choosing dimension reduction method (default: none)")

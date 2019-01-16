@@ -3,7 +3,9 @@
 import sys
 import os
 import numpy
-from matplotlib import pyplot
+import matplotlib
+import matplotlib.lines
+import matplotlib.pyplot
 import argparse
 
 
@@ -86,37 +88,31 @@ def _transform_dicts(_list):
 def plot_log(axes, log_file):
 	#
 	train, test = load_data_from_log(log_file)
-	#
 	x = numpy.arange(len(train)) + 1
 	train_mean = train.mean(axis = 1)
 	train_std = train.std(axis = 1)
 	test_mean = test.mean(axis = 1)
 	test_std = test.std(axis = 1)
 	#
-	figs = []
-	figs.append(axes.plot(x, train_mean, clip_on = False,
+	axes.plot(x, train_mean, clip_on = False,
 		linestyle = "-", linewidth = 1.0,
-		color = "#4040FF", label = "Train accuracy")[0])
-	figs.append(axes.plot(x, test_mean, clip_on = False,
+		color = "#4040FF", label = "Train accuracy")
+	axes.plot(x, test_mean, clip_on = False,
 		linestyle = "-", linewidth = 1.0,
-		color = "#FF8000", label = "Test accuracy")[0])
-	#
-	axes.set_xlim(1.0, 30.0)
-	axes.set_ylim(0.0, 1.0)
-	axes.set_xticks([10, 20, 30])
-	axes.set_yticks([0.25, 0.50, 0.75, 1.00])
-	axes.grid(linestyle = "-", linewidth = 1.0, color = "#FFFFFF")
-	#
-	return figs
+		color = "#FF8000", label = "Test accuracy")
+	return
 
 
 def plot_all(dataset_res_dir, png):
-	figure, axes_list = pyplot.subplots(nrows = len(DIMSTEST_CLASSIFIERS),
-		ncols = len(DIMSTEST_DIMREDUC), figsize = (6.5, 9),
-		sharex = True, sharey = True)
-	pyplot.subplots_adjust(left = 0.15, right = 0.95, bottom = 0.11, top = 0.96,
+	figure, axes_list = matplotlib.pyplot.subplots(
+		nrows = len(DIMSTEST_CLASSIFIERS), ncols = len(DIMSTEST_DIMREDUC),
+		figsize = (6.5, 9), sharex = True, sharey = True)
+	matplotlib.pyplot.subplots_adjust(
+		left = 0.15, right = 0.95, bottom = 0.11, top = 0.96,
 		hspace = 0.04, wspace = 0.04)
 	figure.align_ylabels(axes_list[:, 0])
+	#
+	_legend_set = False
 	#
 	for ax_c, dr in enumerate(DIMSTEST_DIMREDUC):
 		for ax_r, classifier in enumerate(DIMSTEST_CLASSIFIERS):
@@ -125,9 +121,7 @@ def plot_all(dataset_res_dir, png):
 			ax.set_facecolor("#F0F0F0")
 			for sp in ax.spines.values():
 				sp.set_visible(False)
-			#
-			fdata = os.path.join(dataset_res_dir, dr["id"], classifier["id"], "log")
-			figs = plot_log(ax, fdata)
+			ax.grid(linestyle = "-", linewidth = 1.0, color = "#FFFFFF")
 			# column heads
 			if ax_r == 0:
 				ax.text(x = 15, y = 1.05, s = dr["display_name"],
@@ -148,9 +142,26 @@ def plot_all(dataset_res_dir, png):
 				right = False, labelright = False,
 				bottom = tick_showbottom, labelbottom = tick_showbottom,
 				top = False, labeltop = False)
+			ax.set_xlim(1.0, 30.0)
+			ax.set_ylim(0.0, 1.0)
+			ax.set_xticks([10, 20, 30])
+			ax.set_yticks([0.25, 0.50, 0.75, 1.00])
+			# plot
+			fdata = os.path.join(dataset_res_dir, dr["id"], classifier["id"], "log")
+			try:
+				plot_log(ax, fdata)
+			except:
+				pass
+	# legend, only once
+	figs = [
+		matplotlib.pyplot.Line2D([], [], linewidth = 1.0, linestyle = "-",
+			color = "#4040FF", label = "Train accuracy"),
+		matplotlib.pyplot.Line2D([], [], linewidth = 1.0, linestyle = "-",
+			color = "#FF8000", label = "Test accuracy"),
+	]
 	figure.legend(handles = figs, ncol = 2, loc = "lower center")
-	pyplot.savefig(png)
-	pyplot.close()
+	matplotlib.pyplot.savefig(png)
+	matplotlib.pyplot.close()
 
 
 if __name__ == "__main__":
