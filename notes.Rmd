@@ -748,3 +748,14 @@ Reduce dims    EXPONENT1    PLATFORM1    PLATFORM2
 28             < 1 min      < 1 min      < 1 min
 29             < 1 min      < 1 min      < 1 min
 30             < 1 min      < 1 min      < 1 min
+
+
+## 2019-01-17
+
+Almost made conclusions:
+
+1) PCA is least overfitting, LDA has worst overfitting;
+2) To achive same level of accuracy, LSDR requires less dimensions than PCA (in general);
+5) LSDR becomes overfitting when downgrades into more than 15 dimensions (in general), this overfitting is potentially due to the insufficient number of samples each class;
+3) LDA overfitting is due to the high dimensionality in original data;
+4) PCA (dimension reduction) + LDA (classifier) performs well in general;
