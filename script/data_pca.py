@@ -43,7 +43,7 @@ def plot_pca(figure, data, labels):
 	pca = sklearn.decomposition.PCA(n_components = 100)
 	transformed = pca.fit_transform(data)
 	tx, ty = transformed[:, :2].T # first two pc's
-	eigvals = pca.explained_variance_[:100]
+	eigvals = pca.explained_variance_ratio_[:100]
 
 	# plot
 	colors = list(pyplot.get_cmap("Set1").colors) + \
@@ -74,7 +74,7 @@ def plot_pca(figure, data, labels):
 		facecolor = "#FFFFFF40", edgecolor = "#4040FF")
 	axes_eig.set_xlim(0, max(x) + 1)
 	axes_eig.set_ylim(0, max(eigvals) * 1.1)
-	axes_eig.set_ylabel("Eigenvalue")
+	axes_eig.set_ylabel("Ratio var. explained")
 
 	# separate pca plot
 	for i, label in enumerate(uniq_labels):
