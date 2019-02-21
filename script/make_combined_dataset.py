@@ -23,7 +23,7 @@ DATASETS = [
 	},
 	{
 		"phase": "PLATFORM2",
-		"data": "./data/PLATFORM1-50.normalized_l2.data.tsv",
+		"data": "./data/PLATFORM2-50.normalized_l2.data.tsv",
 		"meta": "./data/PLATFORM2-50.normalized_l2.meta.tsv",
 	},
 ]

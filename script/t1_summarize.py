@@ -7,9 +7,11 @@ import numpy
 
 
 SUMMARIZE_DATASETS = [
-	"EXPONENT1-50.normalized_l2.data.tsv",
-	"PLATFORM1-50.normalized_l2.data.tsv",
-	"PLATFORM2-50.normalized_l2.data.tsv",
+	#"EXPONENT1-50.normalized_l2.data.tsv",
+	#"PLATFORM1-50.normalized_l2.data.tsv",
+	#"PLATFORM2-50.normalized_l2.data.tsv",
+	"COMBINED.phase.normalized_l2.data.tsv",
+	"COMBINED.strain.normalized_l2.data.tsv",
 ]
 
 SUMMARIZE_CLASSIFIERS = [

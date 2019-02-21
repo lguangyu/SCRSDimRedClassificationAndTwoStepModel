@@ -3,7 +3,7 @@
 
 dims_test_dir="output/dims_test"
 mkdir -p $dims_test_dir
-for file in {EXPONENT1,PLATFORM1,PLATFORM2}; do
+for file in {COMBINED.phase,COMBINED.strain}; do
 	mkdir -p $dims_test_dir/$file
 	for dimred in {pca,lda,lsdr}; do
 		mkdir -p $dims_test_dir/$file/$dimred

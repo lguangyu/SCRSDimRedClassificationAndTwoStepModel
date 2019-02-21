@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-data="./data/COMBINED.normalized_l2.data.tsv"
-meta="./data/COMBINED.phase.normalized_l2.meta.tsv"
+data="./data/COMBINED.strain.normalized_l2.data.tsv"
+meta="./data/COMBINED.strain.normalized_l2.meta.tsv"
 #COMBINED.strain.normalized_l2.meta.tsv
 for model in {gnb,lr,lda,svm_lin,svm_rbf}; do
 	python3 ./script/t1_methods.py \

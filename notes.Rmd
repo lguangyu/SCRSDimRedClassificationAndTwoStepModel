@@ -546,6 +546,32 @@ python3 ./script/plot_dims_test.py $dims_test_dir
 ![](./image/PLATFORM2-50.dims_test.png)
 
 
+# Stage 2: combined labels (phases, strains)
+
+Original dataset were combined in two ways to get two new datasets:
+
+* Clump all strains in each phase, resulting in a dataset with three phases as labels
+* Clump all phases each strain, resulting in a dataset with 26 strains
+
+
+## Result overview
+
+## Average accuracy
+
+![](./summary/COMBINED.phase.normalized_l2.data.tsv.summary.accuracy.png)
+
+![](./summary/COMBINED.strain.normalized_l2.data.tsv.summary.accuracy.png)
+
+
+### Three phases
+
+![](./image/COMBINED.phase.dims_test.png)
+
+### 26 strains
+
+![](./image/COMBINED.strain.dims_test.png)
+
+
 # NOTES
 
 ## 2018-12-28
