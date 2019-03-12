@@ -47,22 +47,19 @@ class EvenSplitCrossValidation(object):
 
 
 	@staticmethod
-	def _split_bool_vector(bool_vec, n_splits):
+	def _get_label_split_mask(labels_vec, target_label, n_splits):
 		"""
-		split the True's in a boolean vector into n_splits;
-		each split has almost same True's
-		return list of indices
+		split the positions of <target_label> in <labels_vec> into
+		almost-evenly distributed <n_splits> query indices
+		returns a list of indices arrays
 		"""
 		# nonzero indices
-		nonzero = (numpy.nonzero(bool_vec)[0]).tolist() # turn to list
-		# slice indices list
-		slice_size = len(nonzero) / n_splits # this is ok to be decimal
-		ret = []
-		for i in range(n_splits):
-			slice_start	= int(slice_size * i)
-			slice_end	= int(slice_size * (i + 1))
-			ret.append(nonzero[slice_start:slice_end])
-		return ret
+		target_label_mask = numpy.equal(labels_vec, target_label)
+		indices = numpy.nonzero(target_label_mask)[0]
+		# this function deals with n-elements not dividable by n_splits
+		folds_masks = numpy.array_split(indices, n_splits)
+		assert type(folds_masks) == list
+		return folds_masks
 
 
 	@staticmethod
@@ -75,8 +72,8 @@ class EvenSplitCrossValidation(object):
 		uniq_labels.sort()
 		# find splits for each label
 		label_splits = [EvenSplitCrossValidation.\
-			_split_bool_vector(labels == label, n_fold)
-			for label in uniq_labels]
+			_get_label_split_mask(labels, i, n_fold)
+			for i in uniq_labels]
 		# note these are indices,
 		# next, each split just need to assign these indices to True
 		# in a originally full of False vector
