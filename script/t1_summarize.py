@@ -4,15 +4,8 @@ import sys
 import os
 import argparse
 import numpy
+import warnings
 
-
-SUMMARIZE_DATASETS = [
-	#"EXPONENT1-50.normalized_l2.data.tsv",
-	#"PLATFORM1-50.normalized_l2.data.tsv",
-	#"PLATFORM2-50.normalized_l2.data.tsv",
-	"COMBINED.phase.normalized_l2.data.tsv",
-	"COMBINED.strain.normalized_l2.data.tsv",
-]
 
 SUMMARIZE_CLASSIFIERS = [
 	dict(id = "gnb", display_name = "GNB"),
@@ -24,26 +17,30 @@ SUMMARIZE_CLASSIFIERS = [
 
 SUMMARIZE_DIMREDUC = [
 	dict(id = "none_none",	display_name = "N/A"),
-	dict(id = "pca_26",		display_name = "PCA(26)"),
-	dict(id = "lda_26",		display_name = "LDA(26)"),
-	dict(id = "lsdr_26",	display_name = "LSDR(26)"),
+	dict(id = "pca_%d",		display_name = "PCA(%d)"),
+	dict(id = "lda_%d",		display_name = "LDA(%d)"),
+	dict(id = "lsdr_%d",	display_name = "LSDR(%d)"),
 ]
 
 
 def get_args():
 	ap = argparse.ArgumentParser()
-	ap.add_argument("-i", "--input-dir",
-		type = str, metavar = "dir", required = True,
-		help = "directory of cross validation results (required)")
+	ap.add_argument("-i", "--input-prefix",
+		type = str, metavar = "prefix", required = True,
+		help = "prefix of cross validation results (required)")
+	ap.add_argument("-o", "--output-prefix",
+		type = str, metavar = "prefix", required = True,
+		help = "prefix of output summary (required)")
 	ap.add_argument("-d", "--delimiter",
 		type = str, metavar = "char", default = "\t",
 		help = "delimiter in input/output file (default: <tab>)")
+	ap.add_argument("-r", "--reduc-dims-to",
+		type = int, metavar = "int", required = True,
+		help = "summary the results with this dimension reduction methods are\
+			trained to reduce to this dimension (required)")
 	ap.add_argument("-t", "--row-tag",
 		type = str, metavar = "str", default = "accuracy",
 		help = "the tag of row to be extracted (default: accuracy)")
-	ap.add_argument("-o", "--output-dir",
-		type = str, metavar = "dir", default = "./summary",
-		help = "output directory (default: ./summary)")
 	ap.add_argument("--without-png", action = "store_true",
 		help = "do not plot (default: off)")
 	args = ap.parse_args()
@@ -51,18 +48,20 @@ def get_args():
 
 
 def get_results_by_rowtag(fname, rowtag, delimiter = "\t"):
+	if not os.path.isfile(fname):
+		warnings.warn("file '%s' does not exists, skipping" % fname)
+		return None
 	with open(fname, "r") as fh:
 		lines = fh.read().splitlines()
 	for l in lines:
 		l = l.split(delimiter)
 		if l[0] == rowtag:
 			return numpy.asarray(l[1:], dtype = float)
-	print("warning: no rowtag '%s' found in file '%s'" % (rowtag, fname),
-		file = sys.stderr)
+	warnings.warn("no rowtag '%s' found in file '%s'" % (rowtag, fname))
 	return None
 
 
-def load_and_combine_results(input_dir, dataset, rowtag, delimiter):
+def load_and_combine_results(prefix, rowtag, delimiter, reduc_dims_to):
 	# load/extract results <rowtag> from multiple files
 	# organize 1st dim as classification method
 	# 2nd dim as dim reduction methods
@@ -71,9 +70,12 @@ def load_and_combine_results(input_dir, dataset, rowtag, delimiter):
 	for classifier in SUMMARIZE_CLASSIFIERS:
 		r = []
 		for dimreduc in SUMMARIZE_DIMREDUC:
-			ifile = os.path.join(input_dir,\
-				"%s.%s.dr_%s.10_fold.overall.txt"\
-				% (dataset, classifier["id"], dimreduc["id"]))
+			try:
+				ifile = "%s.%s.dr_%s.10_fold.overall.txt"\
+					% (prefix, classifier["id"], dimreduc["id"] % reduc_dims_to)
+			except TypeError as e:
+				ifile = "%s.%s.dr_%s.10_fold.overall.txt"\
+					% (prefix, classifier["id"], dimreduc["id"])
 			r.append(get_results_by_rowtag(ifile, rowtag, delimiter))
 		ret.append(r)
 	return ret
@@ -108,7 +110,7 @@ def savetxt(fname, mean, stdev, delimiter):
 	return
 
 
-def save_tableplot(fname, mean, stdev, title = ""):
+def save_tableplot(fname, mean, stdev, reduc_dims_to, title = ""):
 	# lazy load
 	from matplotlib import pyplot
 	# layout
@@ -141,14 +143,19 @@ def save_tableplot(fname, mean, stdev, title = ""):
 	for i in range(nr):
 		for j in range(nc):
 			value = mean[i, j]
+			text = "N/A" if numpy.isnan(value) else ("%.3f" % value)
 			# if blue is dark, use white; else black
-			color = "#000000" if value <= 0.6 else "#FFFFFF"
-			axes.text(x = j + 0.5, y = i + 0.5, s = "%.3f" % value,
+			color = "#FFFFFF" if value > 0.6 else "#000000"
+			axes.text(x = j + 0.5, y = i + 0.5, s = text,
 				color = color, fontsize = 12, fontweight = "bold",
 				horizontalalignment = "center", verticalalignment = "center")
 	# x labels
 	for i, dimreduc in enumerate(SUMMARIZE_DIMREDUC):
-		axes.text(x = i + 0.5, y = -0.3, s = dimreduc["display_name"],
+		try:
+			col_header = dimreduc["display_name"] % reduc_dims_to
+		except TypeError as e:
+			col_header = dimreduc["display_name"]
+		axes.text(x = i + 0.5, y = -0.3, s = col_header,
 			clip_on = False, color = "k", fontsize = 14,
 			horizontalalignment = "center", verticalalignment = "center")
 	# y labels
@@ -181,18 +188,16 @@ def save_tableplot(fname, mean, stdev, title = ""):
 
 def main():
 	args = get_args()
-	for dataset in SUMMARIZE_DATASETS:
-		data = load_and_combine_results(args.input_dir,
-			dataset, args.row_tag, args.delimiter)
-		# calculate mean and std
-		mean, std = compute_mean_stdev(data)
-		# output
-		prefix = os.path.join(args.output_dir,
-			"%s.summary.%s" % (dataset, args.row_tag))
-		savetxt(prefix + ".tsv", mean, std, args.delimiter)
-		if not args.without_png:
-			title = "%s, %s" % (dataset, args.row_tag)
-			save_tableplot(prefix + ".png", mean, std, title = title)
+	data = load_and_combine_results(args.input_prefix, args.row_tag, args.delimiter,\
+		args.reduc_dims_to)
+	# calculate mean and std
+	mean, std = compute_mean_stdev(data)
+	# output
+	os.makedirs(os.path.dirname(args.output_prefix), exist_ok = True)
+	savetxt(args.output_prefix + ".tsv", mean, std, args.delimiter)
+	if not args.without_png:
+		title = args.input_prefix + ", " + args.row_tag + " summary"
+		save_tableplot(args.output_prefix + ".png", mean, std, args.reduc_dims_to, title = title)
 	return
 
 
