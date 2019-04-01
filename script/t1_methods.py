@@ -1,60 +1,48 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-import numpy
 import argparse
+import json
+import numpy
+import os
+import sklearn.model_selection
 import sklearn.preprocessing
-import custom_pylib.cross_validation
+import sys
+import pylib
 
 
 def get_args():
 	ap = argparse.ArgumentParser()
-	ap.add_argument("-i", "--data", type = str, metavar = "tsv", required = True,
-		help = "sample data file tsv (required)")
-	ap.add_argument("-m", "--meta", type = str, metavar = "tsv", required = True,
-		help = "metadata file tsv (required)")
+	ap.add_argument("config", type = str,
+		help = "running config json file")
 	ap.add_argument("-c", "--classifier", type = str, required = True,
-		choices = ["gnb", "lr", "lda", "svm_lin", "svm_rbf"],
-		help = "choice of fitting model (required)")
-	ap.add_argument("-f", "--cv-folds", type = int, metavar = "int", default = 10,
-		help = "n-fold cross validation (default: 10)")
+		choices = list(pylib.classifier.list_registered()),
+		help = "choice of classifier (required)")
+	ap.add_argument("-f", "--cv-folds", type = int,
+		metavar = "int", default = 10,
+		help = "n-fold cross validation, must be at least 2 (default: 10)")
 	ap.add_argument("-p", "--permutation", type = str,
 		metavar = "disable|random|int", default = "random",
-		help = "permutate samples, can be 'disable', 'random' or an integer as seed (default: random)")
+		help = "permutate samples, can be 'disable', 'random' "\
+			+ "or an integer as seed (default: random)")
 	ap.add_argument("-R", "--dim-reduc", type = str,
-		default = "none", choices = ["none", "pca", "lda", "lsdr"],
-		help = "choosing dimension reduction method (default: none)")
+		default = "none", choices = list(pylib.dim_reducer.list_registered()),
+		help = "choice of dimension reduction method (default: none)")
 	ap.add_argument("-D", "--reduce-dim-to", type = str,
 		metavar = "none|int", default = "none",
-		help = "reduce dimensionality to this value, must be positive and is required if --dim-reduc is not 'none', omitted otherwise")
+		help = "reduce dimensionality to this value, must be positive "\
+			+ "and is required if --dim-reduc is not 'none', omitted otherwise")
 	gp = ap.add_argument_group("output")
-	gp.add_argument("--output-txt-dir", type = str, metavar = "dir", default = "output",
+	gp.add_argument("--output-txt-dir", type = str,
+		metavar = "dir", default = "output",
 		help = "output txt results to this dir (default: output)")
-	gp.add_argument("--output-png-dir", type = str, metavar = "dir", default = "image",
+	gp.add_argument("--output-png-dir", type = str,
+		metavar = "dir", default = "image",
 		help = "output png results to this dir (default: image)")
 	args = ap.parse_args()
 	# check args
-	_check_args_cv_folds(args)
-	_check_args_dim_reduction(args)
-	_check_args_permutation(args)
-	# format output fname string
-	# excluding folder and extension
-	args.output_str = "%s.%s.dr_%s_%s.%d_fold" % (
-		os.path.basename(args.data), args.classifier,
-		args.dim_reduc, str(args.reduce_dim_to), args.cv_folds)
-	return args
-
-
-def _check_args_cv_folds(args):
-	if args.cv_folds <= 0:
-		raise ValueError("--cv-folds must be positive")
-	return
-
-
-def _check_args_dim_reduction(args):
+	# ckeck dimension reduction
 	if args.dim_reduc == "none":
-		args.reduce_dim_to = "none" # set this to none as omitted
+		args.reduce_dim_to = None # set this to none as omitted
 	else:
 		if args.reduce_dim_to == "none":
 			raise ValueError("--reduce-dim-to is required when --dim-reduc not none")
@@ -62,14 +50,7 @@ def _check_args_dim_reduction(args):
 		args.reduce_dim_to = int(args.reduce_dim_to)
 		if args.reduce_dim_to <= 0:
 			raise ValueError("--reduce-dim-to must be positive")
-	return
-
-
-def _check_args_permutation(args):
-	if args.permutation not in ["disable", "random"]:
-		# try setting as seed
-		args.permutation = int(args.permutation)
-	return
+	return args
 
 
 def print_runinfo(args, fh = sys.stdout):
@@ -79,59 +60,62 @@ def print_runinfo(args, fh = sys.stdout):
 		print(key + ":", arg_vars[key], file = fh)
 
 
-def load_data(fdata, fmeta):
-	data = numpy.loadtxt(fdata, dtype = float, delimiter = "\t")
-	with open(fmeta, "r") as fh:
-		meta = fh.read().splitlines()
-	# label is the 1st col in metadata file
-	labels = list(map(lambda i: i.split("\t")[0], meta))
-	#labels = [i.split("\t")[0] for i in meta]
-	labels = numpy.asarray(labels, dtype = object)
+def load_data(config) -> "data, label":
+	with open(config, "r") as fh:
+		cfg = json.load(fh)
+	# load data
+	data = numpy.loadtxt(cfg["data_file"], dtype = float, delimiter = "\t")
+	# load labels
+	with open(cfg["label_file"], "r") as fh:
+		labels = [line.replace("\n", "").split("\t")[cfg["label_col"]]\
+			for line in fh]
+	assert len(data) == len(labels), "%d|%d" % (len(data), len(labels))
 	return data, labels
-
-
-def get_unique_labels(labels):
-	uniques = numpy.unique(labels)
-	uniques.sort()
-	return uniques
-
-
-def encode_labels(labels):
-	encoder = sklearn.preprocessing.LabelEncoder()
-	encoder.fit(labels)
-	return encoder, encoder.transform(labels)
 
 
 def main():
 	args = get_args()
-	print_runinfo(args)
-
+	#print_runinfo(args)
 	# load data
-	data, labels = load_data(args.data, args.meta)
-
-	# preprocessing
-	uniq_labels = get_unique_labels(labels)
-	lab_encoder, encoded_labels = encode_labels(labels)
-
+	data, labels = load_data(args.config)
+	# preprocessing, encode labels
+	label_encoder = sklearn.preprocessing.LabelEncoder()
+	label_encoder.fit(labels)
+	encoded_labels = label_encoder.transform(labels)
+	# model
+	model = pylib.SingleLevelModel(\
+		level_props = dict(\
+			dim_reducer = args.dim_reduc,\
+			classifier = args.classifier,\
+			dims_remain = args.reduce_dim_to))
 	# cross validation
-	cv = custom_pylib.cross_validation.CrossValidation(
-		classifier = args.classifier, n_fold = args.cv_folds,
-		permutation = ("random" if args.permutation else "disable"),
-		dim_reduc = args.dim_reduc, reduce_dim_to = args.reduce_dim_to)
+	cv = pylib.SingleLevelCrossValidator(model, args.cv_folds, args.permutation)
+	# run cv
 	cv.run_cv(data, encoded_labels)
-	#cv_res = cv.get_result()
 
-	# save text result
-	txt_prefix = os.path.join(args.output_txt_dir, args.output_str)
-	cv.savetxt(txt_prefix, uniq_labels, lab_encoder)
-	
-	# save plots
-	png_prefix = os.path.join(args.output_png_dir, args.output_str)
-	boxplot_title = "%s, classifier=%s, dr=%s(%s), n_fold=%d"\
-		% (os.path.basename(args.data), args.classifier,
-		args.dim_reduc, str(args.reduce_dim_to), args.cv_folds)
-	cv.savefig_boxplot(png_prefix, uniq_labels, lab_encoder,
-		title = boxplot_title)
+	# output
+	os.makedirs(args.output_txt_dir, exist_ok = True)
+	txt_output = os.path.join(args.output_txt_dir,
+		"%s.%s.dr_%s_%s.%s_fold.txt" % (\
+			os.path.basename(args.config),
+			args.classifier,
+			args.dim_reduc, args.reduce_dim_to,
+			str(args.cv_folds)))
+	with open(txt_output, "w") as fh:
+		print("\t".join(["class-labels:"] + list(label_encoder.classes_)),\
+			file = fh)
+		for i in range(args.cv_folds):
+			print("fold %d, training evaluation:" % (i + 1), file = fh)
+			cv.train_evaluation[i].dump_txt(fh)
+			print("fold %d, testing evaluation:" % (i + 1), file = fh)
+			cv.test_evaluation[i].dump_txt(fh)
+	## save plots
+	#png_prefix = os.path.join(args.output_png_dir, args.output_str)
+	#boxplot_title = "%s, classifier=%s, dr=%s(%s), n_fold=%d"\
+	#	% (os.path.basename(args.data), args.classifier,
+	#	args.dim_reduc, str(args.reduce_dim_to), args.cv_folds)
+	#cv.savefig_boxplot(png_prefix, uniq_labels, lab_encoder,
+	#	title = boxplot_title)
 	return
 
 

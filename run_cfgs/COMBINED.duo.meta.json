@@ -1,0 +1,6 @@
+{
+	"data_file": "./data/COMBINED.normalized_l2.data.tsv",
+	"label_file": "./data/COMBINED.duo.labels.tsv",
+	"level1_label_col": 0,
+	"level2_label_col": 1
+}
