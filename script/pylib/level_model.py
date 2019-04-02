@@ -183,7 +183,6 @@ class TwoLevelModel(base_class.ABCModel):
 		# reset the level2 model list
 		self.level2_props.splits = {}
 		for i, l2x, l2y in level2_splits:
-			print(len(l2x), len(l2y))
 			# create new objects
 			self.level2_props.new_dim_reducer_obj()
 			self.level2_props.new_classifier_obj()
