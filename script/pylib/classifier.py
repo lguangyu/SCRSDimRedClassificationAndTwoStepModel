@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import functools
 import numpy
 import sklearn.discriminant_analysis
 import sklearn.linear_model
@@ -33,40 +34,47 @@ class SklearnClassifierAliasMethodsMixin(base_class.ABCClassifier):
 @register_classifier("gnb")
 class GNB(SklearnClassifierAliasMethodsMixin,\
 	sklearn.naive_bayes.GaussianNB):
-	def __init__(self, *ka, **kw):
-		super(GNB, self).__init__(*ka, **kw)
+	@functools.wraps(sklearn.naive_bayes.GaussianNB.__init__)
+	def __init__(self, **kw):
+		super(GNB, self).__init__(**kw)
 		return
 
 
 @register_classifier("lr")
 class LR(SklearnClassifierAliasMethodsMixin,\
 	sklearn.linear_model.LogisticRegression):
-	def __init__(self, *ka, **kw):
-		super(LR, self).__init__(*ka, **kw)
+	@functools.wraps(sklearn.linear_model.LogisticRegression.__init__)
+	def __init__(self, **kw):
+		super(LR, self).__init__(**kw)
 		return
 
 
 @register_classifier("lda")
 class LDA(SklearnClassifierAliasMethodsMixin,\
 	sklearn.discriminant_analysis.LinearDiscriminantAnalysis):
-	def __init__(self, *ka, **kw):
-		super(LDA, self).__init__(*ka, **kw)
+	@functools.wraps(sklearn.discriminant_analysis.LinearDiscriminantAnalysis.__init__)
+	def __init__(self, **kw):
+		super(LDA, self).__init__(**kw)
 		return
 
 
 @register_classifier("svm_lin")
-class SVM_LINEAR(SklearnClassifierAliasMethodsMixin,\
+class SVMLinear(SklearnClassifierAliasMethodsMixin,\
 	sklearn.svm.LinearSVC):
-	def __init__(self, *ka, multi_class = "ovr", **kw):
-		super(SVM_LINEAR, self).__init__(*ka, multi_class, **kw)
+	# sklearn explicitly require the __init__ provide all argument names
+	# here we bypass is by using wrapping
+	@functools.wraps(sklearn.svm.LinearSVC.__init__)
+	def __init__(self, **kw):
+		super(SVMLinear, self).__init__(multi_class = "ovr", **kw)
 		return
 
 
 @register_classifier("svm_rbf")
 class KSVM_RBF(SklearnClassifierAliasMethodsMixin,\
 	sklearn.svm.SVC):
-	def __init__(self, *ka, kernel = "rbf", **kw):
-		super(KSVM_RBF, self).__init__(*ka, kernel, **kw)
+	@functools.wraps(sklearn.svm.SVC.__init__)
+	def __init__(self, **kw):
+		super(KSVM_RBF, self).__init__(kernel = "rbf", **kw)
 		return
 
 	def train(self, X, *ka, **kw):
