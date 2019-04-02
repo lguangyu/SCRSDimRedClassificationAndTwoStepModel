@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import functools
 import numpy
 import sklearn.decomposition
 import sklearn.discriminant_analysis
@@ -32,8 +33,6 @@ class SklearnDimReducerAliasMethodsMixin(base_class.ABCDimensionReducer):
 @register_dim_reducer("none")
 class Plain(base_class.ABCDimensionReducer):
 	# dummy model does no dimension reduction
-	_require_scale_ = False
-	#
 	def __init__(self, n_components = None, **kw):
 		super(Plain, self).__init__(**kw)
 
@@ -47,8 +46,7 @@ class Plain(base_class.ABCDimensionReducer):
 @register_dim_reducer("pca")
 class PCA(SklearnDimReducerAliasMethodsMixin,\
 	sklearn.decomposition.PCA):
-	_require_scale_ = False
-
+	@functools.wraps(sklearn.decomposition.PCA.__init__)
 	def __init__(self, **kw):
 		super(PCA, self).__init__(**kw)
 		return
@@ -57,8 +55,7 @@ class PCA(SklearnDimReducerAliasMethodsMixin,\
 @register_dim_reducer("lda")
 class LDA(SklearnDimReducerAliasMethodsMixin,\
 	sklearn.discriminant_analysis.LinearDiscriminantAnalysis):
-	_require_scale_ = False
-
+	@functools.wraps(sklearn.discriminant_analysis.LinearDiscriminantAnalysis.__init__)
 	def __init__(self, **kw):
 		super(LDA, self).__init__(**kw)
 		return
@@ -68,8 +65,6 @@ class LDA(SklearnDimReducerAliasMethodsMixin,\
 class LSDR(SklearnDimReducerAliasMethodsMixin):
 	# wrapper class for Chieh's LSDR
 	# linear supervised dimension reduction using HSIC
-	_require_scale_ = True
-
 	def __init__(self, n_components, **kw):
 		# n_clusters can be acquired
 		# when training data passed to fit()
@@ -115,4 +110,4 @@ def create(registed_name, *ka, **kw):
 
 
 def list_registered():
-	return _DIM_REDUCERS.keys()
+	return sorted(_DIM_REDUCERS.keys())

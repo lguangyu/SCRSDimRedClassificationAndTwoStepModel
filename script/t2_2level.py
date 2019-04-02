@@ -67,9 +67,11 @@ def load_data(config) -> "data, label":
 
 def main():
 	args = get_args()
-	#print_runinfo(args)
 	# load data
 	data, lv1_labels, lv2_labels = load_data(args.config)
+	data = sklearn.preprocessing.scale(data)
+	assert numpy.isclose(numpy.mean(data, axis = 0), 0).all()
+	assert numpy.isclose(numpy.std(data, axis = 0), 1).all()
 	univ_labels = [i + j for i, j in zip(lv1_labels, lv2_labels)]
 	# preprocessing, encode labels
 	univ_label_encoder = sklearn.preprocessing.LabelEncoder()
@@ -86,13 +88,12 @@ def main():
 	# output
 	os.makedirs(args.output_txt_dir, exist_ok = True)
 	txt_output = os.path.join(args.output_txt_dir,
-		"%s.two_level.%s_fold.txt"\
-			% (os.path.basename(args.config), str(args.cv_folds)))
-	with open(txt_output, "w") as fh:
-		print("\t".join(["lv1-labels:"] + list(lv1_label_encoder.classes_)),\
-			file = fh)
-		print("\t".join(["lv2-labels:"] + list(lv2_label_encoder.classes_)),\
-			file = fh)
+		"%s.two_level.%d_fold.%s.txt"\
+			% (os.path.basename(args.config), args.cv_folds,\
+			"lv2_indep" if args.indep_levels else "lv2_dep"))
+	with pylib.Logger(txt_output, "w") as LOG:
+		LOG.tee("\t".join(["lv1-labels:"] + list(lv1_label_encoder.classes_)))
+		LOG.tee("\t".join(["lv2-labels:"] + list(lv2_label_encoder.classes_)))
 		# model
 		dr_cls_comb = itertools.product(\
 			pylib.dim_reducer.list_registered(),\
@@ -102,29 +103,34 @@ def main():
 			# level 2 model only does dimension reduction enabled combinations
 			if lv1_dr == "none" or lv2_dr == "none":
 				continue
+			# log running model
+			LOG.tee("model:\t%s+%s/%s+%s" % (lv1_dr, lv1_cls, lv2_dr, lv2_cls))
 			# create model
-			model = pylib.TwoLevelModel(\
-				level1_props = dict(\
-					dim_reducer = lv1_dr,\
-					classifier = lv1_cls,\
-					dims_remain = args.level1_reduce_dim_to),
-				level2_props = dict(\
-					dim_reducer = lv2_dr,\
-					classifier = lv2_cls,\
-					dims_remain = args.level2_reduce_dim_to),
-				indep_level2 = args.indep_levels)
-			# cross validation
-			cv = pylib.TwoLevelCrossValidator(model, args.cv_folds, args.permutation)
-			# run cv
-			cv.run_cv(data, encoded_univ_labels, encoded_lv1_labels, encoded_lv2_labels)
-			# output
-			print("model:\t%s+%s/%s+%s" % (lv1_dr, lv1_cls, lv2_dr, lv2_cls),\
-				file = fh)
-			for i in range(args.cv_folds):
-				print("fold %d, training evaluation:" % (i + 1), file = fh)
-				cv.train_evaluation[i].dump_txt(fh)
-				print("fold %d, testing evaluation:" % (i + 1), file = fh)
-				cv.test_evaluation[i].dump_txt(fh)
+			try:
+				model = pylib.TwoLevelModel(\
+					level1_props = dict(\
+						dim_reducer = lv1_dr,\
+						classifier = lv1_cls,\
+						dims_remain = args.level1_reduce_dim_to),
+					level2_props = dict(\
+						dim_reducer = lv2_dr,\
+						classifier = lv2_cls,\
+						dims_remain = args.level2_reduce_dim_to),
+					indep_level2 = args.indep_levels)
+				# cross validation
+				cv = pylib.TwoLevelCrossValidator(model, args.cv_folds, args.permutation)
+				# run cv
+				cv.run_cv(data, encoded_univ_labels, encoded_lv1_labels, encoded_lv2_labels)
+				# results output
+				for i in range(args.cv_folds):
+					LOG.tee("fold %d, training evaluation:" % (i + 1))
+					LOG.tee(repr(cv.train_evaluation[i]))
+					LOG.tee("fold %d, testing evaluation:" % (i + 1))
+					LOG.tee(repr(cv.test_evaluation[i]))
+			except Exception as e:
+				LOG.tee("error: begin")
+				LOG.tee(repr(e))
+				LOG.tee("error: end")
 	return
 
 

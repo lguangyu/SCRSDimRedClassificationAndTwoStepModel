@@ -78,6 +78,9 @@ def main():
 	#print_runinfo(args)
 	# load data
 	data, labels = load_data(args.config)
+	data = sklearn.preprocessing.scale(data)
+	assert numpy.isclose(numpy.mean(data, axis = 0), 0).all()
+	assert numpy.isclose(numpy.std(data, axis = 0), 1).all()
 	# preprocessing, encode labels
 	label_encoder = sklearn.preprocessing.LabelEncoder()
 	label_encoder.fit(labels)
@@ -101,14 +104,13 @@ def main():
 			args.classifier,
 			args.dim_reduc, args.reduce_dim_to,
 			str(args.cv_folds)))
-	with open(txt_output, "w") as fh:
-		print("\t".join(["class-labels:"] + list(label_encoder.classes_)),\
-			file = fh)
+	with pylib.Logger(txt_output, "w") as LOG:
+		LOG.tee("\t".join(["class-labels:"] + list(label_encoder.classes_)))
 		for i in range(args.cv_folds):
-			print("fold %d, training evaluation:" % (i + 1), file = fh)
-			cv.train_evaluation[i].dump_txt(fh)
-			print("fold %d, testing evaluation:" % (i + 1), file = fh)
-			cv.test_evaluation[i].dump_txt(fh)
+			LOG.tee("fold %d, training evaluation:" % (i + 1))
+			LOG.tee(str(cv.train_evaluation[i]))
+			LOG.tee("fold %d, testing evaluation:" % (i + 1))
+			LOG.tee(str(cv.test_evaluation[i]))
 	## save plots
 	#png_prefix = os.path.join(args.output_png_dir, args.output_str)
 	#boxplot_title = "%s, classifier=%s, dr=%s(%s), n_fold=%d"\

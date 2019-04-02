@@ -27,12 +27,13 @@ class LabelPredictEvaluate(object):
 		self.class_fscore = class_fscore
 		return
 
-	def dump_txt(self, file):
-		print("\t".join(["accuracy:", "%f" % self.overall_accuracy]), file = file)
-		print("\t".join(["precision:", "%f" % self.overall_precision]), file = file)
-		print("\t".join(["per-class-precision:"]\
-			+ ["%f" % i for i in self.class_precision]), file = file)
-		print("\t".join(["fscore", "%f" % self.overall_fscore]), file = file)
-		print("\t".join(["per-class-fscore:"]\
-			+ ["%f" % i for i in self.class_fscore]), file = file)
-		return
+	def __repr__(self):
+		s = []
+		s.append("\t".join(["accuracy:", "%f" % self.overall_accuracy]))
+		s.append("\t".join(["precision:", "%f" % self.overall_precision]))
+		s.append("\t".join(["per-class-precision:"]\
+			+ ["%f" % i for i in self.class_precision]))
+		s.append("\t".join(["fscore", "%f" % self.overall_fscore]))
+		s.append("\t".join(["per-class-fscore:"]\
+			+ ["%f" % i for i in self.class_fscore]))
+		return "\n".join(s)

@@ -12,6 +12,8 @@ def get_args():
 	ap.add_argument("-n", "--normalize", type = str,
 		choices = ["none", "l1", "l2", "minmax", "area"],
 		default = "l2", help = "normalization method")
+	#ap.add_argument("-s", "--scale", action = "store_true",
+	#	help = "scale data to 0-mean and 1-stdev (default: off)")
 	return ap.parse_args()
 
 

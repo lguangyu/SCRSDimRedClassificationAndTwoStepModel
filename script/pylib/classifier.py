@@ -94,4 +94,4 @@ def create(registed_name, *ka, **kw):
 
 
 def list_registered():
-	return _CLASSIFIERS.keys()
+	return sorted(_CLASSIFIERS.keys())
