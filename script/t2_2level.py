@@ -120,9 +120,7 @@ def main():
 			# results output
 			results["models"][model_name] = cv.evaluation.copy()
 		except Exception as e:
-			raise
 			results["models"][model_name] = repr(e)
-		break
 	# output
 	os.makedirs(args.output_txt_dir, exist_ok = True)
 	txt_output = os.path.join(args.output_txt_dir,
