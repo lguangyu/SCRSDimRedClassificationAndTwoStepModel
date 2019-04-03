@@ -124,7 +124,7 @@ def main():
 	# output
 	os.makedirs(args.output_txt_dir, exist_ok = True)
 	txt_output = os.path.join(args.output_txt_dir,
-		"%s.two_level.%d_fold.%s.json"\
+		"%s.%d_fold.%s.json"\
 			% (os.path.basename(args.config), args.cv_folds,\
 			"lv2_indep" if args.indep_levels else "lv2_dep"))
 	with open(txt_output, "w") as fh:
