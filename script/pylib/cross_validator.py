@@ -57,12 +57,8 @@ class SingleLevelCrossValidator(object):
 		return self.permutation if isinstance(self.permutation, int) else None
 
 	@property
-	def train_evaluation(self):
-		return self._train_evaluation
-
-	@property
-	def test_evaluation(self):
-		return self._test_evaluation
+	def evaluation(self):
+		return self._evaluation
 
 	############################################################################
 	# methods
@@ -71,8 +67,7 @@ class SingleLevelCrossValidator(object):
 		self.model = model
 		self.n_fold = n_fold
 		self.permutation = permutation
-		self._train_evaluation = []
-		self._test_evaluation = []
+		self._evaluation = []
 		return
 
 	def run_cv(self, X, Y):
@@ -83,8 +78,7 @@ class SingleLevelCrossValidator(object):
 		assumes labels (Y) are encoded
 		"""
 		# clear old results
-		self.train_evaluation.clear()
-		self.test_evaluation.clear()
+		self.evaluation.clear()
 
 		cv_splitter = sklearn.model_selection.StratifiedKFold(\
 			n_splits = self.n_fold,
@@ -100,8 +94,7 @@ class SingleLevelCrossValidator(object):
 			self.model.train(train_X, train_Y)
 			self.model.test(test_X, test_Y)
 			# fetch results
-			self.train_evaluation.append(self.model.train_evaluation)
-			self.test_evaluation.append(self.model.test_evaluation)
+			self.evaluation.append(self.model.evaluation.copy())
 		return
 
 
@@ -121,8 +114,7 @@ class TwoLevelCrossValidator(SingleLevelCrossValidator):
 		level1_Y, level2_Y: used in training
 		"""
 		# clear old results
-		self.train_evaluation.clear()
-		self.test_evaluation.clear()
+		self.evaluation.clear()
 
 		cv_splitter = sklearn.model_selection.StratifiedKFold(\
 			n_splits = self.n_fold,
@@ -138,8 +130,7 @@ class TwoLevelCrossValidator(SingleLevelCrossValidator):
 			test_level2_Y = level2_Y[test_indices]
 			# train and test
 			self.model.train(train_X, train_level1_Y, train_level2_Y)
-			self.model.test(test_X, test_level2_Y)
+			self.model.test(test_X, test_level1_Y, test_level2_Y)
 			# fetch results
-			self.train_evaluation.append(self.model.train_evaluation)
-			self.test_evaluation.append(self.model.test_evaluation)
+			self.evaluation.append(self.model.evaluation.copy())
 		return

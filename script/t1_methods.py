@@ -96,21 +96,20 @@ def main():
 	# run cv
 	cv.run_cv(data, encoded_labels)
 
+	# results
+	results = {}
+	results["class_labels"] = list(label_encoder.classes_)
+	results["folds"] = cv.evaluation.copy()
 	# output
 	os.makedirs(args.output_txt_dir, exist_ok = True)
 	txt_output = os.path.join(args.output_txt_dir,
-		"%s.%s.dr_%s_%s.%s_fold.txt" % (\
+		"%s.%s.dr_%s_%s.%d_fold.txt" % (\
 			os.path.basename(args.config),
 			args.classifier,
 			args.dim_reduc, args.reduce_dim_to,
-			str(args.cv_folds)))
-	with pylib.Logger(txt_output, "w") as LOG:
-		LOG.tee("\t".join(["class-labels:"] + list(label_encoder.classes_)))
-		for i in range(args.cv_folds):
-			LOG.tee("fold %d, training evaluation:" % (i + 1))
-			LOG.tee(str(cv.train_evaluation[i]))
-			LOG.tee("fold %d, testing evaluation:" % (i + 1))
-			LOG.tee(str(cv.test_evaluation[i]))
+			args.cv_folds))
+	with open(txt_output, "w") as fh:
+		json.dump(results, fh)
 	## save plots
 	#png_prefix = os.path.join(args.output_png_dir, args.output_str)
 	#boxplot_title = "%s, classifier=%s, dr=%s(%s), n_fold=%d"\

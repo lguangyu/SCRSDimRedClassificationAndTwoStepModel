@@ -63,12 +63,14 @@ class SingleLevelModel(base_class.ABCModel):
 		raise ValueError("level_props must be LevelProps")
 
 	@property
-	def train_evaluation(self):
-		return self._train_evaluation
-
-	@property
-	def test_evaluation(self):
-		return self._test_evaluation
+	def evaluation(self):
+		return self._evaluation
+	@evaluation.setter
+	def evaluation(self, value):
+		if isinstance(value, result_evaluate.SingleLevelModelEvaluation):
+			self._evaluation = value
+			return
+		raise ValueError("evaluation must be SingleLevelModelEvaluation")
 
 	############################################################################
 	# methods
@@ -78,6 +80,8 @@ class SingleLevelModel(base_class.ABCModel):
 		return
 
 	def train(self, X, Y):
+		# new result
+		self.evaluation = result_evaluate.SingleLevelModelEvaluation()
 		# dimension reduction first
 		self.level_props.dim_reducer_obj.train(X, Y)
 		# reduce dimension of X
@@ -85,26 +89,20 @@ class SingleLevelModel(base_class.ABCModel):
 		# then do classifier training, based on the transformed X
 		self.level_props.classifier_obj.train(dr_X, Y)
 		# do train evaluation
-		self._train_evaluation = self.evaluate(X, Y)
+		pred_Y = self.predict(X) # FIXME: this is redundant calculation tho
+		self.evaluation.evaluate("training", Y, pred_Y)
 		return
 
 	def predict(self, X):
 		dr_X = self.level_props.dim_reducer_obj.transform(X)
 		return self.level_props.classifier_obj.predict(dr_X)
 
-	def evaluate(self, X, true_Y):
-		"""
-		evaluate the prediction of X's label, w.r.t. ground truth Y
-		equivalent to call predict(X) followed by evaluation
-		"""
-		pred_Y = self.predict(X)
-		return result_evaluate.LabelPredictEvaluate(true_Y, pred_Y)
-
 	def test(self, test_X, test_Y):
 		"""
 		evalute the prediction of test dataset
 		"""
-		self._test_evaluation = self.evaluate(test_X, test_Y)
+		pred_Y = self.predict(test_X)
+		self.evaluation.evaluate("testing", test_Y, pred_Y)
 		return
 
 
@@ -136,12 +134,14 @@ class TwoLevelModel(base_class.ABCModel):
 		raise ValueError("level2_props must be LevelProps")
 
 	@property
-	def train_evaluation(self):
-		return self._train_evaluation
-
-	@property
-	def test_evaluation(self):
-		return self._test_evaluation
+	def evaluation(self):
+		return self._evaluation
+	@evaluation.setter
+	def evaluation(self, value):
+		if isinstance(value, result_evaluate.TwoLevelModelEvaluation):
+			self._evaluation = value
+			return
+		raise ValueError("evaluation must be TwoLevelModelEvaluation")
 
 	############################################################################
 	# methods
@@ -170,16 +170,16 @@ class TwoLevelModel(base_class.ABCModel):
 			yield i, level2_X[mask], level2_Y[mask]
 
 	def train(self, X, level1_Y, level2_Y):
+		# new result
+		self.evaluation = result_evaluate.TwoLevelModelEvaluation()
 		# level 1
 		self.level1_props.dim_reducer_obj.train(X, level1_Y)
 		dr_X = self.level1_props.dim_reducer_obj.transform(X)
 		self.level1_props.classifier_obj.train(dr_X, level1_Y)
-		# decide the splits of level 2 training
-		if self.indep_level2:
-			l1y = level1_Y
-		else:
-			l1y = self.level1_props.classifier_obj.predict(dr_X)
-		level2_splits = self._mask_level2_by_level1(l1y, X, level2_Y)
+		# predict level 1 label
+		pred_lv1_Y = self.level1_props.classifier_obj.predict(dr_X)
+		level2_splits = self._mask_level2_by_level1(\
+			(level1_Y if self.indep_level2 else pred_lv1_Y), X, level2_Y)
 		# reset the level2 model list
 		self.level2_props.splits = {}
 		for i, l2x, l2y in level2_splits:
@@ -194,7 +194,11 @@ class TwoLevelModel(base_class.ABCModel):
 			self.level2_props.splits[i] = {\
 				"dim_reducer_obj": self.level2_props.dim_reducer_obj,\
 				"classifier_obj": self.level2_props.classifier_obj}
-		self._train_evaluation = self.evaluate(X, level2_Y)
+		# predict level 2 label
+		pred_lv1_Y, pred_lv2_Y = self.predict(X)
+		self.evaluation.evaluate("training",\
+			level1_Y, pred_lv1_Y,\
+			level2_Y, pred_lv2_Y)
 		return
 
 	def predict(self, X):
@@ -212,19 +216,15 @@ class TwoLevelModel(base_class.ABCModel):
 			assert dr_X.shape[0] == 1, dr_X.shape
 			_pred, = level2_split["classifier_obj"].predict(dr_X)
 			pred_level2_labels.append(_pred)
-		return numpy.asarray(pred_level2_labels, dtype = int)
+		pred_level2_labels = numpy.asarray(pred_level2_labels, dtype = int)
+		return pred_level1_labels, pred_level2_labels
 
-	def evaluate(self, X, true_Y):
-		"""
-		evaluate the prediction of X's label, w.r.t. ground truth Y
-		equivalent to call predict(X) followed by evaluation
-		"""
-		pred_Y = self.predict(X)
-		return result_evaluate.LabelPredictEvaluate(true_Y, pred_Y)
-
-	def test(self, test_X, test_Y):
+	def test(self, test_X, test_lv1_Y, test_lv2_Y):
 		"""
 		evalute the prediction of test dataset
 		"""
-		self._test_evaluation = self.evaluate(test_X, test_Y)
+		pred_lv1_Y, pred_lv2_Y = self.predict(test_X)
+		self.evaluation.evaluate("testing",\
+			test_lv1_Y, pred_lv1_Y,\
+			test_lv2_Y, pred_lv2_Y)
 		return

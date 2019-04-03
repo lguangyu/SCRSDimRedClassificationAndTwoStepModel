@@ -143,7 +143,8 @@ def save_tableplot(fname, mean, stdev, reduc_dims_to, title = ""):
 	for i in range(nr):
 		for j in range(nc):
 			value = mean[i, j]
-			text = "N/A" if numpy.isnan(value) else ("%.3f" % value)
+			_std = stdev[i, j]
+			text = "N/A" if numpy.isnan(value) else ("%.3f (%.2f)" % (value, _std))
 			# if blue is dark, use white; else black
 			color = "#FFFFFF" if value > 0.6 else "#000000"
 			axes.text(x = j + 0.5, y = i + 0.5, s = text,

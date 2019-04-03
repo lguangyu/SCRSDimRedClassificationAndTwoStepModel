@@ -55,5 +55,5 @@ class ABCModel(abc.ABC):
 		pass
 
 	@abc.abstractmethod
-	def evaluate(self, *ka, **kw):
+	def test(self, *ka, **kw):
 		pass

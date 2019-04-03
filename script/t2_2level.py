@@ -85,52 +85,52 @@ def main():
 	lv2_label_encoder = sklearn.preprocessing.LabelEncoder()
 	lv2_label_encoder.fit(lv2_labels)
 	encoded_lv2_labels = lv2_label_encoder.transform(lv2_labels)
+	# results
+	results = {}
+	results["lv1_labels"] = list(lv1_label_encoder.classes_)
+	results["lv2_labels"] = list(lv2_label_encoder.classes_)
+	results["models"] = {}
+	# model
+	dr_cls_comb = itertools.product(\
+		pylib.dim_reducer.list_registered(),\
+		pylib.classifier.list_registered())
+	for (lv1_dr, lv1_cls), (lv2_dr, lv2_cls) in itertools.product(\
+		dr_cls_comb, repeat = 2):
+		# level 2 model only does dimension reduction enabled combinations
+		if lv1_dr == "none" or lv2_dr == "none":
+			continue
+		# log running model
+		model_name = "%s+%s/%s+%s" % (lv1_dr, lv1_cls, lv2_dr, lv2_cls)
+		# create model
+		try:
+			model = pylib.TwoLevelModel(\
+				level1_props = dict(\
+					dim_reducer = lv1_dr,\
+					classifier = lv1_cls,\
+					dims_remain = args.level1_reduce_dim_to),
+				level2_props = dict(\
+					dim_reducer = lv2_dr,\
+					classifier = lv2_cls,\
+					dims_remain = args.level2_reduce_dim_to),
+				indep_level2 = args.indep_levels)
+			# cross validation
+			cv = pylib.TwoLevelCrossValidator(model, args.cv_folds, args.permutation)
+			# run cv
+			cv.run_cv(data, encoded_univ_labels, encoded_lv1_labels, encoded_lv2_labels)
+			# results output
+			results["models"][model_name] = cv.evaluation.copy()
+		except Exception as e:
+			raise
+			results["models"][model_name] = repr(e)
+		break
 	# output
 	os.makedirs(args.output_txt_dir, exist_ok = True)
 	txt_output = os.path.join(args.output_txt_dir,
-		"%s.two_level.%d_fold.%s.txt"\
+		"%s.two_level.%d_fold.%s.json"\
 			% (os.path.basename(args.config), args.cv_folds,\
 			"lv2_indep" if args.indep_levels else "lv2_dep"))
-	with pylib.Logger(txt_output, "w") as LOG:
-		LOG.tee("\t".join(["lv1-labels:"] + list(lv1_label_encoder.classes_)))
-		LOG.tee("\t".join(["lv2-labels:"] + list(lv2_label_encoder.classes_)))
-		# model
-		dr_cls_comb = itertools.product(\
-			pylib.dim_reducer.list_registered(),\
-			pylib.classifier.list_registered())
-		for (lv1_dr, lv1_cls), (lv2_dr, lv2_cls) in itertools.product(\
-			dr_cls_comb, repeat = 2):
-			# level 2 model only does dimension reduction enabled combinations
-			if lv1_dr == "none" or lv2_dr == "none":
-				continue
-			# log running model
-			LOG.tee("model:\t%s+%s/%s+%s" % (lv1_dr, lv1_cls, lv2_dr, lv2_cls))
-			# create model
-			try:
-				model = pylib.TwoLevelModel(\
-					level1_props = dict(\
-						dim_reducer = lv1_dr,\
-						classifier = lv1_cls,\
-						dims_remain = args.level1_reduce_dim_to),
-					level2_props = dict(\
-						dim_reducer = lv2_dr,\
-						classifier = lv2_cls,\
-						dims_remain = args.level2_reduce_dim_to),
-					indep_level2 = args.indep_levels)
-				# cross validation
-				cv = pylib.TwoLevelCrossValidator(model, args.cv_folds, args.permutation)
-				# run cv
-				cv.run_cv(data, encoded_univ_labels, encoded_lv1_labels, encoded_lv2_labels)
-				# results output
-				for i in range(args.cv_folds):
-					LOG.tee("fold %d, training evaluation:" % (i + 1))
-					LOG.tee(repr(cv.train_evaluation[i]))
-					LOG.tee("fold %d, testing evaluation:" % (i + 1))
-					LOG.tee(repr(cv.test_evaluation[i]))
-			except Exception as e:
-				LOG.tee("error: begin")
-				LOG.tee(repr(e))
-				LOG.tee("error: end")
+	with open(txt_output, "w") as fh:
+		json.dump(results, fh)
 	return
 
 
