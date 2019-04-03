@@ -10,30 +10,34 @@ class LabelPredictEvaluate(object):
 		return
 
 	def evaluate(self, true_label, pred_label):
-		overall_accuracy = sklearn.metrics.accuracy_score(true_label, pred_label)
-		overall_precision = sklearn.metrics.precision_score(true_label, pred_label,\
-			average = "micro")
-		class_precision = sklearn.metrics.precision_score(true_label, pred_label,\
-			average = None)
-		overall_fscore = sklearn.metrics.f1_score(true_label, pred_label,\
-			average = "micro")
-		class_fscore = sklearn.metrics.f1_score(true_label, pred_label,\
-			average = None)
-		#
-		self.overall_accuracy = overall_accuracy
-		self.overall_precision = overall_precision
-		self.class_precision = class_precision
-		self.overall_fscore = overall_fscore
-		self.class_fscore = class_fscore
+		self.overall_accuracy = sklearn.metrics.accuracy_score(\
+			true_label, pred_label)
+		self.overall_precision = sklearn.metrics.precision_score(\
+			true_label, pred_label, average = "micro")
+		self.class_precision = sklearn.metrics.precision_score(\
+			true_label, pred_label, average = None)
+		self.overall_fscore = sklearn.metrics.f1_score(\
+			true_label, pred_label, average = "micro")
+		self.class_fscore = sklearn.metrics.f1_score(\
+			true_label, pred_label, average = None)
+		self.overall_recall = sklearn.metrics.recall_score(\
+			true_label, pred_label, average = "micro")
+		self.class_recall = sklearn.metrics.recall_score(\
+			true_label, pred_label, average = None)
+		self.overall_auc = sklearn.metrics.roc_auc_score(\
+			true_label, pred_label, average = "micro")
+		#self.class_auc = sklearn.metrics.roc_auc_score(\
+		#	true_label, pred_label, average = None)
 		return
 
 	def __repr__(self):
 		s = []
-		s.append("\t".join(["accuracy:", "%f" % self.overall_accuracy]))
-		s.append("\t".join(["precision:", "%f" % self.overall_precision]))
-		s.append("\t".join(["per-class-precision:"]\
-			+ ["%f" % i for i in self.class_precision]))
-		s.append("\t".join(["fscore", "%f" % self.overall_fscore]))
-		s.append("\t".join(["per-class-fscore:"]\
-			+ ["%f" % i for i in self.class_fscore]))
+		_vars = vars(self)
+		for k in sorted(_vars.keys()):
+			if "overall_" in k:
+				s.append("\t".join([k + ":", "%f" % _vars[k]]))
+			elif "class_" in k:
+				s.append("\t".join([k + ":"] + ["%f" % i for i in _vars[k]]))
+			else:
+				raise ValueError("unknown key: %s" % k)
 		return "\n".join(s)
