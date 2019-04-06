@@ -14,9 +14,6 @@ def get_args():
 	ap = argparse.ArgumentParser()
 	ap.add_argument("config", type = str,
 		help = "running config json file")
-	ap.add_argument("-c", "--classifier", type = str, required = True,
-		choices = list(pylib.classifier.list_registered()),
-		help = "choice of classifier (required)")
 	ap.add_argument("-f", "--cv-folds", type = int,
 		metavar = "int", default = 10,
 		help = "n-fold cross validation, must be at least 2 (default: 10)")
@@ -24,14 +21,20 @@ def get_args():
 		metavar = "disable|random|int", default = "random",
 		help = "permutate samples, can be 'disable', 'random' "\
 			+ "or an integer as seed (default: random)")
-	ap.add_argument("-R", "--dim-reduc", type = str,
-		default = "none", choices = list(pylib.dim_reducer.list_registered()),
+	#
+	gp = ap.add_argument_group("model settings")
+	gp.add_argument("-R", "--dim-reduc", type = str,
+		default = "none", choices = pylib.dim_reducer.list_registered(),
 		help = "choice of dimension reduction method (default: none)")
-	ap.add_argument("-D", "--reduce-dim-to", type = str,
+	gp.add_argument("-D", "--reduce-dim-to", type = str,
 		metavar = "none|int", default = "none",
 		help = "reduce dimensionality to this value, must be positive "\
 			+ "and is required if --dim-reduc is not 'none', omitted otherwise")
-	gp = ap.add_argument_group("output")
+	gp.add_argument("-C", "--classifier", type = str, required = True,
+		choices = pylib.classifier.list_registered(),
+		help = "choice of classifier (required)")
+	#
+	gp = ap.add_argument_group("output settings")
 	gp.add_argument("--output-txt-dir", type = str,
 		metavar = "dir", default = "output",
 		help = "output txt results to this dir (default: output)")

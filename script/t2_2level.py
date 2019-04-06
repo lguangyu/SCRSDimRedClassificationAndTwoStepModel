@@ -11,7 +11,46 @@ import sys
 import pylib
 
 
+class CommaSepList(object):
+	"""
+	split s into a list by using comma as separator
+	if value_set in __init__ is not None, also checks if all splitted values
+	belong to the value_set
+	"""
+	@property
+	def value_set(self):
+		return self._value_set
+	@value_set.setter
+	def value_set(self, value):
+		if (value is None) or (isinstance(value, list)):
+			self._value_set = value
+			return
+		raise TypeError("value_set must be None or list")
+
+	def __init__(self, value_set: list = None):
+		self.value_set = value_set
+		return 
+
+	def __call__(self, s: str):
+		splitted = s.split(",")
+		if self.value_set is not None:
+			for i in splitted:
+				if i not in self.value_set:
+					raise ValueError("%s not in choices %s"\
+						% (i, str(self.value_set)))
+		return splitted
+
+	def __repr__(self):
+		if self.value_set is None:
+			return "CommaSepList(any)"
+		else:
+			return "CommaSepList(choices: %s)" % (",".join(self.value_set))
+
+
 def get_args():
+	DRS = pylib.dim_reducer.list_registered()
+	CLS = pylib.classifier.list_registered()
+	#
 	ap = argparse.ArgumentParser()
 	ap.add_argument("config", type = str,
 		help = "running config json file")
@@ -22,17 +61,37 @@ def get_args():
 		metavar = "disable|random|int", default = "random",
 		help = "permutate samples, can be 'disable', 'random' "\
 			+ "or an integer as seed (default: random)")
-	ap.add_argument("-D1", "--level1-reduce-dim-to", type = int, required = True,
-		metavar = "int",
-		help = "reduce dimension to this value in the 1st level (required)")
-	ap.add_argument("-D2", "--level2-reduce-dim-to", type = int, required = True,
-		metavar = "int",
-		help = "reduce dimension to this value in the 1st level (required)")
-	ap.add_argument("--indep-levels", action = "store_true",
+	#
+	gp = ap.add_argument_group("level 1 settings")
+	gp.add_argument("-R1", "--level1-dim-reduc", type = CommaSepList(DRS),
+		metavar = "...", default = DRS,
+		help = "choices of dimension reducers in level 1, comma separated "\
+			+ ("(default: %s)" % (",".join(DRS))))
+	gp.add_argument("-D1", "--level1-reduce-dim-to", type = int,
+		required = True, metavar = "int",
+		help = "reduce dimension to this value in the level 1 (required)")
+	gp.add_argument("-C1", "--level1-classifier", type = CommaSepList(CLS),
+		metavar = "...", default = CLS,
+		help = "choices of classifiers in level 1, comma separated "\
+			+ ("(default: %s)" % (",".join(CLS))))
+	#
+	gp = ap.add_argument_group("level 2 settings")
+	gp.add_argument("-R2", "--level2-dim-reduc", type = CommaSepList(DRS),
+		metavar = "...", default = DRS,
+		help = "choices of dimension reducers in level 2, comma separated "\
+			+ ("(default: %s)" % (",".join(DRS))))
+	gp.add_argument("-D2", "--level2-reduce-dim-to", type = int,
+		required = True, metavar = "int",
+		help = "reduce dimension to this value in the level 2 (required)")
+	gp.add_argument("-C2", "--level2-classifier", type = CommaSepList(CLS),
+		metavar = "...", default = CLS,
+		help = "choices of classifiers in level 2, comma separated "\
+			+ ("(default: %s)" % (",".join(CLS))))
+	gp.add_argument("--indep-level2", action = "store_true",
 		help = "train level2 model independently from output of level1 model "\
 			+ "(default: off)")
-
-	gp = ap.add_argument_group("output")
+	#
+	gp = ap.add_argument_group("output settings")
 	gp.add_argument("--output-txt-dir", type = str,
 		metavar = "dir", default = "output",
 		help = "output txt results to this dir (default: output)")
@@ -91,14 +150,9 @@ def main():
 	results["lv2_labels"] = list(lv2_label_encoder.classes_)
 	results["models"] = {}
 	# model
-	dr_cls_comb = itertools.product(\
-		pylib.dim_reducer.list_registered(),\
-		pylib.classifier.list_registered())
-	for (lv1_dr, lv1_cls), (lv2_dr, lv2_cls) in itertools.product(\
-		dr_cls_comb, repeat = 2):
-		# level 2 model only does dimension reduction enabled combinations
-		if lv1_dr == "none" or lv2_dr == "none":
-			continue
+	for lv1_dr, lv1_cls, lv2_dr, lv2_cls in itertools.product(
+		args.level1_dim_reduc, args.level1_classifier,
+		args.level2_dim_reduc, args.level2_classifier):
 		# log running model
 		model_name = "%s+%s/%s+%s" % (lv1_dr, lv1_cls, lv2_dr, lv2_cls)
 		# create model
@@ -112,7 +166,7 @@ def main():
 					dim_reducer = lv2_dr,\
 					classifier = lv2_cls,\
 					dims_remain = args.level2_reduce_dim_to),
-				indep_level2 = args.indep_levels)
+				indep_level2 = args.indep_level2)
 			# cross validation
 			cv = pylib.TwoLevelCrossValidator(model, args.cv_folds, args.permutation)
 			# run cv
@@ -120,13 +174,13 @@ def main():
 			# results output
 			results["models"][model_name] = cv.evaluation.copy()
 		except Exception as e:
-			results["models"][model_name] = repr(e)
+			results["models"][model_name] = "error:" + repr(e)
 	# output
 	os.makedirs(args.output_txt_dir, exist_ok = True)
 	txt_output = os.path.join(args.output_txt_dir,
 		"%s.%d_fold.%s.json"\
 			% (os.path.basename(args.config), args.cv_folds,\
-			"lv2_indep" if args.indep_levels else "lv2_dep"))
+			"lv2_indep" if args.indep_level2 else "lv2_dep"))
 	with open(txt_output, "w") as fh:
 		json.dump(results, fh)
 	return

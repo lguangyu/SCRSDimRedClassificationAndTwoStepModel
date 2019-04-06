@@ -57,3 +57,9 @@ class ABCModel(abc.ABC):
 	@abc.abstractmethod
 	def test(self, *ka, **kw):
 		pass
+
+
+class ResultEvaluationBase(dict, abc.ABC):
+	@abc.abstractmethod
+	def evaluate(self, key, *ka, **kw):
+		pass
