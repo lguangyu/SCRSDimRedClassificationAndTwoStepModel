@@ -85,7 +85,7 @@ class SingleLevelCrossValidator(object):
 		for train_indices, test_indices in cv_splitter.split(X, Y):
 			# split
 			# FIXME: this is temporary
-			print("CV")
+			#print("CV")
 			train_X = X[train_indices]
 			train_Y = Y[train_indices]
 			test_X = X[test_indices]

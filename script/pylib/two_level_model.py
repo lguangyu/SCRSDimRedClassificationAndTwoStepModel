@@ -41,18 +41,21 @@ class TwoLevelModel(level_based_model.LevelBasedModelBase):
 			self[key] = ev
 			return
 
-	class Level2ModelSplit(level_based_model.LevelPropsMixin,\
+	class Level2ModelSplit(level_based_model.LevelPropsRegularizerSelectionMixin,\
+		level_based_model.LevelPropsGeneralMixin,\
 		collections.defaultdict):
 		"""
-		LevelProps subclass only manages several LevelPropsGeneral instances per
-		query label (a.k.a. split)
-		each split is a LevelPropsGeneral instance, which can be accessed with
-		__getitem__ method
+		LevelPropsBase subclass manages several LevelPropsGeneralMixin instances
+		per query label (a.k.a. split)
+		each split is a LevelPropsGeneralMixin instance, which can be accessed
+		with __getitem__ method
 		"""
 		def __init__(self, *ka, **kw):
 			super(TwoLevelModel.Level2ModelSplit, self).__init__(\
-				lambda : self.duplicate(astype = single_level_model.SingleLevelModel),\
+				lambda : self.clone(astype = single_level_model.SingleLevelModel),\
 				*ka, **kw)
+			# above lambda is passed to defaultdict.__init__ as default_factory
+			# default split is copy settings from self
 			return
 
 	############################################################################
@@ -94,8 +97,6 @@ class TwoLevelModel(level_based_model.LevelBasedModelBase):
 		self._level1_model = single_level_model.SingleLevelModel(**level1_props)
 		# level 2 model is a combination of single-level models
 		self._level2_model = self.Level2ModelSplit(**level2_props)
-		# above lambda is passed to defaultdict.__init__ as default_factory
-		# default split is copy settings from self
 		return
 
 	def _mask_level2_by_level1(self, level1_Y, level2_X, level2_Y):

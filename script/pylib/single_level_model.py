@@ -10,8 +10,9 @@ from . import mixin
 from . import result_evaluate
 
 
-class SingleLevelModel(level_based_model.LevelBasedModelBase,\
-	level_based_model.LevelPropsMixin, mixin.RegularizerSelectorMixin):
+class SingleLevelModel(level_based_model.LevelPropsRegularizerSelectionMixin,\
+	level_based_model.LevelPropsGeneralMixin,\
+	level_based_model.LevelBasedModelBase):
 	############################################################################
 	# member class
 	class ModelEvaluationResult(base_class.ResultEvaluationBase):
@@ -50,6 +51,7 @@ class SingleLevelModel(level_based_model.LevelBasedModelBase,\
 	def train(self, X, Y):
 		# new result
 		self.evaluation = self.ModelEvaluationResult()
+		# if used regularizer
 		if self.regularizer_list is not None:
 			self._select_regularizer(X, Y)
 		else:
@@ -71,13 +73,15 @@ class SingleLevelModel(level_based_model.LevelBasedModelBase,\
 	def _select_regularizer(self, X, Y):
 		reg_ev = []
 		for reg in self.regularizer_list:
+			#FIXME: prints in this function is temporary
 			print("regularizer:", reg)
 			# only do with dim reducer/classifier with regularizer argument
+			# not touched if not a RegularizerMixin compatible
 			if isinstance(self.dim_reducer_obj, mixin.RegularizerMixin):
 				self.new_dim_reducer_obj(regularizer = reg)
 			if isinstance(self.classifier_obj, mixin.RegularizerMixin):
 				self.new_classifier_obj(regularizer = reg)
-			# cross validation
+			# local cross validation to select regularizer
 			cv_ev = []
 			cv_splitter = sklearn.model_selection.StratifiedKFold(\
 				n_splits = 10, shuffle = True)
@@ -94,8 +98,10 @@ class SingleLevelModel(level_based_model.LevelBasedModelBase,\
 				cv_ev.append(accuracy)
 				print(accuracy)
 			reg_ev.append(numpy.mean(cv_ev))
-			print("average:", numpy.mean(cv_ev))
-		# find the best
+			print("average:", reg_ev[-1])
+			# delete to explicitly raise error if mistakenly used in later
+			del cv_ev
+		# find the best regularizer value
 		_imax = numpy.argmax(reg_ev)
 		_best_reg = self.regularizer_list[_imax]
 		print("best:", _imax, ",", _best_reg)
@@ -104,7 +110,7 @@ class SingleLevelModel(level_based_model.LevelBasedModelBase,\
 			self.new_dim_reducer_obj(regularizer = _best_reg)
 		if isinstance(self.classifier_obj, mixin.RegularizerMixin):
 			self.new_classifier_obj(regularizer = _best_reg)
-		self._train(X, Y) # use all X and Y
+		self._train(X, Y) # this retrain uses all X and Y
 		return
 
 	def predict(self, X):

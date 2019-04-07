@@ -124,6 +124,15 @@ def load_data(config) -> "data, label":
 	return data, lv1_labels, lv2_labels
 
 
+def _make_level_props_dict(dim_reducer, classifier, dims_remain):
+	ret = dict(dim_reducer = dim_reducer, classifier = classifier,\
+		dims_remain = dims_remain)
+	# FIXME: currently only recognizes lsdr_reg
+	if dim_reducer == "lsdr_reg":
+		ret["regularizer_list"] = [0, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4]
+	return ret
+
+
 def main():
 	args = get_args()
 	# load data
@@ -145,45 +154,51 @@ def main():
 	lv2_label_encoder.fit(lv2_labels)
 	encoded_lv2_labels = lv2_label_encoder.transform(lv2_labels)
 	# results
-	results = {}
-	results["lv1_labels"] = list(lv1_label_encoder.classes_)
-	results["lv2_labels"] = list(lv2_label_encoder.classes_)
-	results["models"] = {}
+	res_dict = {}
+	res_dict["lv1_labels"] = list(lv1_label_encoder.classes_)
+	res_dict["lv2_labels"] = list(lv2_label_encoder.classes_)
 	# model
 	for lv1_dr, lv1_cls, lv2_dr, lv2_cls in itertools.product(
 		args.level1_dim_reduc, args.level1_classifier,
 		args.level2_dim_reduc, args.level2_classifier):
 		# log running model
-		model_name = "%s+%s/%s+%s" % (lv1_dr, lv1_cls, lv2_dr, lv2_cls)
+		model_name = "lv1-%s-%s.lv2-%s-%s" % (lv1_dr, lv1_cls, lv2_dr, lv2_cls)
+		res_dict["model"] = model_name
 		# create model
+		print("model:", model_name)
 		try:
+			# properties of level setups
+			level1_props = _make_level_props_dict(lv1_dr, lv1_cls,\
+				args.level1_reduce_dim_to)
+			level2_props = _make_level_props_dict(lv2_dr, lv2_cls,\
+				args.level2_reduce_dim_to)
+			#print(level2_props)
 			model = pylib.TwoLevelModel(\
-				level1_props = dict(\
-					dim_reducer = lv1_dr,\
-					classifier = lv1_cls,\
-					dims_remain = args.level1_reduce_dim_to),
-				level2_props = dict(\
-					dim_reducer = lv2_dr,\
-					classifier = lv2_cls,\
-					dims_remain = args.level2_reduce_dim_to),
+				level1_props = level1_props,\
+				level2_props = level2_props,\
 				indep_level2 = args.indep_level2)
 			# cross validation
 			cv = pylib.TwoLevelCrossValidator(model, args.cv_folds, args.permutation)
 			# run cv
 			cv.run_cv(data, encoded_univ_labels, encoded_lv1_labels, encoded_lv2_labels)
 			# results output
-			results["models"][model_name] = cv.evaluation.copy()
+			res_dict["evaluation"] = cv.evaluation.copy()
 		except Exception as e:
-			raise
-			results["models"][model_name] = "error:" + repr(e)
-	# output
-	os.makedirs(args.output_txt_dir, exist_ok = True)
-	txt_output = os.path.join(args.output_txt_dir,
-		"%s.%d_fold.%s.json"\
-			% (os.path.basename(args.config), args.cv_folds,\
-			"lv2_indep" if args.indep_level2 else "lv2_dep"))
-	with open(txt_output, "w") as fh:
-		json.dump(results, fh)
+			res_dict["evaluation"] = "error:" + repr(e)
+		########################################################################
+		# output
+		# for task-level parallelism, we write output into separate files
+		txt_ofile = ".".join([\
+			os.path.basename(args.config),\
+			model_name,\
+			"%d_fold" % args.cv_folds,\
+			"lv2_indep" if args.indep_level2 else "lv2_dep",\
+			"json"])
+		txt_ofile = os.path.join(args.output_txt_dir, txt_ofile)
+		#
+		os.makedirs(args.output_txt_dir, exist_ok = True)
+		with open(txt_ofile, "w") as fh:
+			json.dump(res_dict, fh)
 	return
 
 
