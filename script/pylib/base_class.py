@@ -42,8 +42,9 @@ class ABCDimensionReducer(abc.ABC):
 
 
 class ABCModel(abc.ABC):
+	@property
 	@abc.abstractmethod
-	def __init__(self, *ka, **kw):
+	def evaluation(self, *ka, **kw):
 		pass
 
 	@abc.abstractmethod

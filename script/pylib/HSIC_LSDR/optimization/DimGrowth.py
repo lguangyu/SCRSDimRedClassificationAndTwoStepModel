@@ -7,8 +7,8 @@ from .optimization import *
 
 class DimGrowth(optimization):
 	def __init__(self, db):
-		self.X = db['Dloader'].X
-		self.U = U = db['Dloader'].Y
+		self.X = db['data'].X
+		self.U = U = db['data'].Y
 
 		Ku = U.dot(U.T)
 		self.N = N = U.shape[0]
@@ -17,7 +17,7 @@ class DimGrowth(optimization):
 		self.previous_gw = np.ones((N,N))
 		self.Γ = H.dot(Ku).dot(H)
 		
-		self.σ = db['Dloader'].σ
+		self.σ = db['data'].σ
 		self.σ2 = 1.0/(self.σ*self.σ)
 		self.γ = 1.0/(2*self.σ*self.σ)
 

@@ -2,7 +2,7 @@
 #	Note : This is designed for Python 3
 
 
-from optimization import *
+from .optimization import *
 import numpy as np
 
 class orthogonal_optimization(optimization):

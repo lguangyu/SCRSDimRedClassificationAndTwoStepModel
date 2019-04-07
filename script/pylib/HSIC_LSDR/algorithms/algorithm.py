@@ -9,7 +9,6 @@ from ..helper.kernel_lib import *
 from ..helper.format_conversion import *
 from ..helper.classifier import *
 
-
 class algorithm():
 	def __init__(self, db):
 		self.db = db
@@ -20,10 +19,11 @@ class algorithm():
 		db = self.db
 		db['run_time'] = time.time() - start_time
 
-		outstr = '\n\td : %d'%db['Dloader'].d + '\n'
+		outstr = '\n\td : %d'%db['data'].d + '\n'
 		outstr += '\tq : %d'%db['q'] + '\n'
 		outstr += '\tnum cluster : %d'%db['num_of_clusters'] + '\n'
-		outstr += '\tσ_ratio : %d'%db['σ_ratio'] + '\n'
+		outstr += '\tσ_ratio : %.3f'%db['σ_ratio'] + '\n'
+		outstr += '\tλ_ratio : %.3f'%db['λ_ratio'] + '\n'
 		outstr += '\tkernel type : %s'%db['kernel_type'] + '\n'
 		outstr += '\tOptimization method : %s'%db['W_optimize_technique'].__name__ + '\n'
 		outstr += '\tHSIC\n'

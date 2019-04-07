@@ -4,6 +4,7 @@ import collections
 import numpy
 from . import base_class
 from . import level_based_model
+from . import single_level_model
 from . import result_evaluate
 
 
@@ -40,33 +41,29 @@ class TwoLevelModel(level_based_model.LevelBasedModelBase):
 			self[key] = ev
 			return
 
+	class Level2ModelSplit(level_based_model.LevelPropsMixin,\
+		collections.defaultdict):
+		"""
+		LevelProps subclass only manages several LevelPropsGeneral instances per
+		query label (a.k.a. split)
+		each split is a LevelPropsGeneral instance, which can be accessed with
+		__getitem__ method
+		"""
+		def __init__(self, *ka, **kw):
+			super(TwoLevelModel.Level2ModelSplit, self).__init__(\
+				lambda : self.duplicate(astype = single_level_model.SingleLevelModel),\
+				*ka, **kw)
+			return
+
 	############################################################################
 	# variables
 	@property
-	def level1_props(self):
-		return self._level1_props
-	@level1_props.setter
-	def level1_props(self, value):
-		if isinstance(value, self.LevelProps):
-			self._level1_props = value
-			return
-		elif isinstance(value, dict):
-			self.level1_props = self.LevelProps(**value)
-			return
-		raise ValueError("level1_props must be LevelProps or kwargs dict")
+	def level_1(self):
+		return self._level1_model
 
 	@property
-	def level2_props(self):
-		return self._level2_props
-	@level2_props.setter
-	def level2_props(self, value):
-		if isinstance(value, self.LevelPropsSplit):
-			self._level2_props = value
-			return
-		elif isinstance(value, dict):
-			self.level2_props = self.LevelPropsSplit(**value)
-			return
-		raise ValueError("level2_props must be LevelPropsSplit or kwargs dict")
+	def level_2(self):
+		return self._level2_model
 
 	@property
 	def evaluation(self):
@@ -93,8 +90,12 @@ class TwoLevelModel(level_based_model.LevelBasedModelBase):
 		"""
 		super(TwoLevelModel, self).__init__(*ka, **kw)
 		self.indep_level2 = indep_level2
-		self.level1_props = level1_props
-		self.level2_props = level2_props
+		# level 1 model is a single-level model
+		self._level1_model = single_level_model.SingleLevelModel(**level1_props)
+		# level 2 model is a combination of single-level models
+		self._level2_model = self.Level2ModelSplit(**level2_props)
+		# above lambda is passed to defaultdict.__init__ as default_factory
+		# default split is copy settings from self
 		return
 
 	def _mask_level2_by_level1(self, level1_Y, level2_X, level2_Y):
@@ -108,22 +109,20 @@ class TwoLevelModel(level_based_model.LevelBasedModelBase):
 	def train(self, X, level1_Y, level2_Y):
 		# new result
 		self.evaluation = self.ModelEvaluationResult()
-		# level 1
-		self.level1_props.dim_reducer_obj.train(X, level1_Y)
-		dr_X = self.level1_props.dim_reducer_obj.transform(X)
-		self.level1_props.classifier_obj.train(dr_X, level1_Y)
-		# predict level 1 label
-		pred_lv1_Y = self.level1_props.classifier_obj.predict(dr_X)
-		level2_splits = self._mask_level2_by_level1(\
-			(level1_Y if self.indep_level2 else pred_lv1_Y), X, level2_Y)
+		# level 1, and predict level 1 labels
+		self.level_1.train(X, level1_Y)
+		pred_lv1_Y = self.level_1.predict(X)
 		# reset the level2 model list
-		self.level2_props.clear()
-		for i, l2x, l2y in level2_splits:
-			# train
+		self.level_2.clear()
+		# split for level 2
+		for i, l2x, l2y in self._mask_level2_by_level1(\
+			(level1_Y if self.indep_level2 else pred_lv1_Y), X, level2_Y):
+			# above use ground truth level1_Y if use independent training manner;
+			# else use predicted label pred_lv1_Y
+			#
+			# train each split
 			# direct index [i] should be safe, as level2_props is defaultdict
-			self.level2_props[i].dim_reducer_obj.train(l2x, l2y)
-			dr_X = self.level2_props[i].dim_reducer_obj.transform(l2x)
-			self.level2_props[i].classifier_obj.train(dr_X, l2y)
+			self.level_2[i].train(l2x, l2y)
 		# predict level 2 label
 		pred_lv1_Y, pred_lv2_Y = self.predict(X)
 		self.evaluation.evaluate("training",\
@@ -133,18 +132,14 @@ class TwoLevelModel(level_based_model.LevelBasedModelBase):
 
 	def predict(self, X):
 		# level 1
-		dr_X = self.level1_props.dim_reducer_obj.transform(X)
-		pred_level1_labels = self.level1_props.classifier_obj.predict(dr_X)
+		pred_level1_labels = self.level_1.predict(X)
 		# level 2
 		assert len(pred_level1_labels) == len(X), len(pred_level1_labels)
 		pred_level2_labels = []
 		for l1y, l2x in zip(pred_level1_labels, X):
 			# since pred_level1_labels is mixed, have to do below one-by-one
 			l2x = l2x.reshape(1, -1) # ensure 2-d array
-			# use the trained model per given level 1 label
-			dr_X = self.level2_props[l1y].dim_reducer_obj.transform(l2x)
-			assert dr_X.shape[0] == 1, dr_X.shape
-			_pred, = self.level2_props[l1y].classifier_obj.predict(dr_X)
+			_pred, = self.level_2[l1y].predict(l2x)
 			pred_level2_labels.append(_pred)
 		pred_level2_labels = numpy.asarray(pred_level2_labels, dtype = int)
 		return pred_level1_labels, pred_level2_labels

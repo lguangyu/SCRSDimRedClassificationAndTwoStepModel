@@ -3,10 +3,9 @@
 from ..test_base import *
 import sklearn.metrics
 import numpy as np
-from .DLoader import *
+from .Pdataset import *
 
-class np_loader(DLoader):
+class basic_dataset(Pdataset):
 	def __init__(self, db):
-		
-		DLoader.__init__(self, db)
-
+		Pdataset.__init__(self, db)
+		self.initilize_data_info(db)

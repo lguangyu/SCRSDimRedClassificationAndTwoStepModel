@@ -4,8 +4,6 @@ import os
 import sklearn.model_selection
 import sys
 from . import base_class
-from . import level_model
-#from . import cv_split, dim_reduction, classifier, cv_result_plot
 
 
 class SingleLevelCrossValidator(object):
@@ -86,6 +84,8 @@ class SingleLevelCrossValidator(object):
 			random_state = self.shuffle_seed)
 		for train_indices, test_indices in cv_splitter.split(X, Y):
 			# split
+			# FIXME: this is temporary
+			print("CV")
 			train_X = X[train_indices]
 			train_Y = Y[train_indices]
 			test_X = X[test_indices]

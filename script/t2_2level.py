@@ -174,6 +174,7 @@ def main():
 			# results output
 			results["models"][model_name] = cv.evaluation.copy()
 		except Exception as e:
+			raise
 			results["models"][model_name] = "error:" + repr(e)
 	# output
 	os.makedirs(args.output_txt_dir, exist_ok = True)

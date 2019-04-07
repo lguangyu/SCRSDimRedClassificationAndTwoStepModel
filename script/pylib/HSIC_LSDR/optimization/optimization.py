@@ -6,4 +6,4 @@ import numpy as np
 class optimization():
 	def __init__(self, db):
 		self.db = db
-
+	

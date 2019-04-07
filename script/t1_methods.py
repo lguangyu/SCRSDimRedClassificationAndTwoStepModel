@@ -90,10 +90,12 @@ def main():
 	encoded_labels = label_encoder.transform(labels)
 	# model
 	model = pylib.SingleLevelModel(\
-		level_props = dict(\
-			dim_reducer = args.dim_reduc,\
-			classifier = args.classifier,\
-			dims_remain = args.reduce_dim_to))
+		dim_reducer = args.dim_reduc,\
+		classifier = args.classifier,\
+		dims_remain = args.reduce_dim_to)
+	# FIXME: this is temporary
+	if args.dim_reduc == "lsdr_reg":
+		model.regularizer_list = [0, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4]
 	# cross validation
 	cv = pylib.SingleLevelCrossValidator(model, args.cv_folds, args.permutation)
 	# run cv

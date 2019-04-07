@@ -2,30 +2,55 @@
 
 from .algorithm import *
 from ..helper.kernel_lib import *
+from sklearn.metrics import accuracy_score
 from ..helper.terminal_print import *
 from ..helper.gradients import *
 from ..helper.Φs import *
-#import .debug
+from math import e
+import autograd.numpy as np
+from autograd import grad
+from ..helper.format_conversion import *
+
+#import debug
 
 #	max Tr[(DKuD)Kx]
 #	W -> Kx -> D -> γ -> Σ ψA_i,j -> W
 class linear_supv_dim_reduction(algorithm):
 	def __init__(self, db):
 		#	parent variables : λ0, conv_threshold, W, W_λ
-		db['W'] = np.zeros((db['Dloader'].d ,db['q']))
-		self.Ku = Ku_kernel(db['Dloader'].Y)
-		N = db['Dloader'].N
+		db['W'] = np.zeros((db['data'].d ,db['q']))
+		self.Ku = Ku_kernel(db['data'].Y)
+		N = db['data'].N
 			
 		self.H = np.eye(N) - (1.0/N)*np.ones((N,N))
 		self.γ = double_center(self.Ku, self.H)
 
-		db['compute_cost'] = self.compute_cost	
+		if db['W_optimize_technique'].__name__ == 'grassman':
+			db['compute_cost'] = self.grassman_cost_function
+		else: db['compute_cost'] = self.compute_cost	
+		self.autograd_func = grad(db['compute_cost'])       # Obtain its gradient function
+
 		db['compute_gradient'] = self.compute_f_gradient
 		db['compute_Φ'] = self.compute_Φ
 		db['compute_γ'] = self.compute_γ	
 		algorithm.__init__(self, db)
 	
-		# print('Experiment : linear dimensionality reduction\n')
+		#print('Experiment : linear dimensionality reduction\n')
+
+	def grassman_cost_function(self, W):
+		new_X = np.dot(self.db['data'].X, W)
+		σ = self.db['data'].σ
+		γ = self.db['compute_γ']()
+
+		#	compute gaussian kernel
+		bs = new_X.shape[0]
+		K = np.empty((0, bs))	
+		for i in range(bs):
+			Δx = new_X[i,:] - new_X
+			exp_val = -np.sum(Δx*Δx, axis=1)/(2*σ*σ)
+			K = np.vstack((K, e**(exp_val)))
+
+		return -np.sum(γ*K)
 
 	def compute_γ(self):
 		return self.γ
@@ -35,27 +60,24 @@ class linear_supv_dim_reduction(algorithm):
 
 		if self.db['kernel_type'] == 'rbf':
 			return gaussian_Φ(self.db)
+		elif self.db['kernel_type'] == 'rbf_slow':
+			return gaussian_Φ_slow(self.db)
 		elif self.db['kernel_type'] == 'linear':
 			return linear_Φ(self.db)
 		elif self.db['kernel_type'] == 'polynomial':
 			return polynomial_Φ(self.db)
+		elif self.db['kernel_type'] == 'relative':
+			return gaussian_Φ(self.db)
 
 	def compute_cost(self, W=None):
 		[Kx, D] = Kx_D_given_W(self.db, setW=W)		#Kx
+
 		γ = self.compute_γ()
 		return -np.sum(γ*Kx)
 
 	def compute_f_gradient(self, old_x):
 		self.db['W'] = old_x
-
-		if self.db['kernel_type'] == 'rbf':
-			return gaussian_gradient(self.db)
-		elif self.db['kernel_type'] == 'linear':
-			return linear_gradient(self.db)
-		elif self.db['kernel_type'] == 'polynomial':
-			return polynomial_gradient(self.db)
-
-
+		return compute_objective_gradient(self.db)
 
 	def compute_Lagrangian_gradient(self):
 		Φ = self.compute_Φ()
@@ -76,10 +98,16 @@ class linear_supv_dim_reduction(algorithm):
 		if True:	#	ism W initialization
 			if self.db['kernel_type'] == 'rbf':
 				Φ = gaussian_Φ_0(self.db)
+			elif self.db['kernel_type'] == 'rbf_slow':
+				Φ = gaussian_Φ_0(self.db)
 			elif self.db['kernel_type'] == 'linear':
 				Φ = linear_Φ_0(self.db)
 			elif self.db['kernel_type'] == 'polynomial':
 				Φ = polynomial_Φ_0(self.db)
+			elif self.db['kernel_type'] == 'relative':
+				σ_list = 1.0/relative_σ(self.db['data'].X)
+				self.db['Σ'] = σ_list.dot(σ_list.T)
+				Φ = relative_Φ_0(self.db)
 	
 			[self.db['W'], self.db['W_λ']] = eig_solver(Φ, self.db['q'], mode='smallest')
 		else:		#	using random initialization
@@ -87,6 +115,12 @@ class linear_supv_dim_reduction(algorithm):
 			q = self.db['W'].shape[1]
 			W = np.random.randn(d,q)
 			[self.db['W'],R] = np.linalg.qr(W)		# QR ensures orthogonality
+
+
+		if self.db['λ_ratio'] != 0:						# using rank constraint 
+			Φ_norm = np.linalg.norm(Φ)
+			rc = np.linalg.norm(rank_constraint(self.db))
+			self.db['λ'] = self.db['λ_ratio']*Φ_norm/rc
 
 	def update_f(self):
 		#gaussian_gradient(self.db)
@@ -97,33 +131,54 @@ class linear_supv_dim_reduction(algorithm):
 	def outer_converge(self):
 		return True
 
+
 	def verify_result(self, start_time):
 		db = self.db
 		if 'ignore_verification' in db: return
 		final_cost = self.compute_cost()
 
-		db['Dloader'].load_validation()
+		db['data'].load_validation()
 		outstr = '\nExperiment : linear supervised dimensionality reduction : %s, final cost : %.3f\n'%(db['data_name'],final_cost)
 
-		Y = db['Dloader'].Y
-		X = db['Dloader'].X
+		Y = db['data'].Y
+		X = db['data'].X
 
-		X_valid = db['Dloader'].X_valid
-		Y_valid = db['Dloader'].Y_valid
+		X_valid = db['data'].X_valid
+		Y_valid = db['data'].Y_valid
 
 		outstr += self.verification_basic_info(start_time)
 		
-		if not db['run_only_validation']:
-			[out_allocation, nmi, svm_time] = use_svm(X,Y)
-			outstr += '\t\tTraining SVM NMI without dimension reduction : %.3f, time : %.4f'%(nmi, svm_time) + '\n'
-			[out_allocation, nmi, svm_time] = use_svm(X,Y, db['W'])
-			outstr += '\t\tTraining SVM NMI with dimension reduction : %.3f'%nmi + '\n'
 
-		[out_allocation, nmi, svm_time] = use_svm(X_valid, Y_valid)
-		outstr += '\t\tTest Set SVM NMI without dimension reduction : %.3f, time : %.4f'%(nmi, svm_time) + '\n'
+		[out_allocation, nmi, svm_time] = use_svm(X,Y)
+		acc = accuracy_score(Y, out_allocation)
+		outstr += '\t\tTraining SVM NMI without dimension reduction : %.3f, acc : %.3f, time : %.4f'%(nmi, acc, svm_time) + '\n'
+		[out_allocation, nmi, svm_time] = use_svm(X,Y, db['W'])
+		acc = accuracy_score(Y, out_allocation)
+		outstr += '\t\tTraining SVM NMI with dimension reduction : %.3f , acc : %.3f'%(nmi, acc) + '\n'
 
-		[out_allocation, nmi, svm_time] = use_svm(X_valid, Y_valid, db['W'])
-		outstr += '\t\tTest Set SVM NMI with dimension reduction : %.3f'%nmi + '\n'
+		if db['separate_data_for_validation']:
+			[out_allocation, nmi, svm_time] = use_svm(X_valid, Y_valid)
+			acc = accuracy_score(Y_valid, out_allocation)
+			outstr += '\t\tTest Set SVM NMI without dimension reduction : %.3f, acc : %.3f, time : %.4f'%(nmi, acc, svm_time) + '\n'
+	
+			[out_allocation, nmi_valid, svm_time] = use_svm(X_valid, Y_valid, db['W'])
+			acc_valid = accuracy_score(Y_valid, out_allocation)
+			outstr += '\t\tTest Set SVM NMI with dimension reduction : %.3f, acc : %.3f '%(nmi_valid, acc_valid) + '\n'
+
+
+
+		#	relative kernel	
+		#Kx = rbk_relative_σ(db, X_valid.dot(db['W']))
+		#Kx = rbk_sklearn(X_valid.dot(db['W']), db['data'].σ)
+		#Kx = rbk_sklearn(X_valid.dot(db['W']), 1)
+		#[out_allocation, nmi, svm_time] = use_svm(X_valid,Y_valid)
+		#acc = accuracy_score(Y_valid, out_allocation)
+		#outstr += '\t\tTraining SVM NMI without dimension reduction : %.3f, acc : %.3f, time : %.4f'%(nmi, acc, svm_time) + '\n'
+		##[out_allocation, nmi, svm_time] = use_svm(X_valid,Y_valid, W=db['W'], k='precomputed',K=Kx)
+		#[out_allocation, nmi, svm_time] = use_svm(X_valid,Y_valid, W=db['W'])
+		#acc = accuracy_score(Y, out_allocation)
+		#outstr += '\t\tTraining SVM NMI with dimension reduction : %.3f , acc : %.3f'%(nmi, acc) + '\n'
+
 
 
 
@@ -133,8 +188,10 @@ class linear_supv_dim_reduction(algorithm):
 		lda_labels = clf.predict(X)
 		lda_time = time.time() - start_time
 		nmi = normalized_mutual_info_score(lda_labels, Y)
+		acc = accuracy_score(Y, lda_labels)
+
 		outstr += '\tLDA\n'
-		outstr += '\t\tTraining NMI with LDA : %.3f'%nmi + '\n'
+		outstr += '\t\tTraining NMI with LDA : %.3f, acc : %.3f'%(nmi, acc) + '\n'
 		outstr += '\t\tLDA Run time : %.3f'%lda_time + '\n'
 
 		start_time = time.time() 
@@ -145,13 +202,20 @@ class linear_supv_dim_reduction(algorithm):
 
 
 		[out_allocation, nmi, svm_time] = use_svm(Xpca1,Y)
+		acc = accuracy_score(Y, out_allocation)
 		outstr += '\tPCA\n'
-		outstr += '\t\tTraining SVM NMI with PCA dimension reduction : %.3f'%nmi + '\n'
+		outstr += '\t\tTraining SVM NMI with PCA dimension reduction : %.3f, acc : %.3f'%(nmi, acc) + '\n'
 
 		[out_allocation, nmi, svm_time] = use_svm(Xpca, Y_valid)
-		outstr += '\t\tTest Set SVM NMI with PCA dimension reduction : %.3f'%nmi + '\n'
-		outstr += '\t\tPCA training time : %.3f'%pca_time + '\n'
+		acc = accuracy_score(Y_valid, out_allocation)
+		outstr += '\t\tTest Set SVM NMI with PCA dimension reduction : %.3f, acc : %.3f'%(nmi, acc) + '\n'
+		outstr += '\t\tPCA training time : %.3f'%pca_time + '\n\n\n\n\n'
 
+		if db['separate_data_for_validation']:
+			outstr += 'NMI : %.3f\n'%nmi_valid
+			outstr += 'ACC : %.3f\n'%acc_valid
+			outstr += 'TIME : %.5f\n'%db['run_time']
+			outstr += 'COST : %.3f\n'%final_cost
 
 		print(outstr)
 

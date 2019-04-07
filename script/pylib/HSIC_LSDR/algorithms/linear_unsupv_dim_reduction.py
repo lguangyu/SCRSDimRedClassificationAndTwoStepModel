@@ -5,19 +5,22 @@ from ..helper.kernel_lib import *
 from ..helper.terminal_print import *
 from ..helper.gradients import *
 from ..helper.Φs import *
-#import .debug
-
+from math import e
+#import debug
 
 #	max Tr[(DKuD)Kx]
 #	W -> Kx -> D -> γ -> Σ ψA_i,j -> W
 class linear_unsupv_dim_reduction(algorithm):
 	def __init__(self, db):
-		db['W'] = np.zeros((db['Dloader'].d ,db['q']))
-		#self.Ku = Ku_kernel(db['Dloader'].Y)
-		N = db['Dloader'].N
+		db['W'] = np.zeros((db['data'].d ,db['q']))
+		#self.Ku = Ku_kernel(db['data'].Y)
+		N = db['data'].N
 		self.H = np.eye(N) - (1.0/N)*np.ones((N,N))
 
-		db['compute_cost'] = self.compute_cost	
+		if db['W_optimize_technique'].__name__ == 'grassman':
+			db['compute_cost'] = self.grassman_cost_function
+		else: db['compute_cost'] = self.compute_cost	
+
 		db['compute_gradient'] = self.compute_f_gradient
 		db['compute_Φ'] = self.compute_Φ
 		db['compute_γ'] = self.update_γ	
@@ -31,34 +34,53 @@ class linear_unsupv_dim_reduction(algorithm):
 		algorithm.__init__(self, db)
 		print('Experiment : linear unsupervised dimensionality reduction\n')
 
+	def grassman_cost_function(self, W):
+		new_X = np.dot(self.db['data'].X, W)
+		σ = self.db['data'].σ
+		γ = self.db['compute_γ']()
+
+		#	compute gaussian kernel
+		bs = new_X.shape[0]
+		K = np.empty((0, bs))	
+		for i in range(bs):
+			Δx = new_X[i,:] - new_X
+			exp_val = -np.sum(Δx*Δx, axis=1)/(2*σ*σ)
+			K = np.vstack((K, e**(exp_val)))
+
+		return -np.sum(γ*K)
+
 	def update_γ(self):
 		db = self.db
 		Ku = self.U.dot(self.U.T)
+
 		γ = double_center(Ku, self.H)
 		return γ
 
+		#DγD = db['D_inv'].dot(γ).dot(db['D_inv'])
+		#return DγD
+
+		#return γ
+
 	def compute_f_gradient(self, old_x):
 		self.db['W'] = old_x
-
-		if self.db['kernel_type'] == 'rbf':
-			return gaussian_gradient(self.db)
-		elif self.db['kernel_type'] == 'linear':
-			return linear_gradient(self.db)
-		elif self.db['kernel_type'] == 'polynomial':
-			return polynomial_gradient(self.db)
+		return compute_objective_gradient(self.db)
 
 	def compute_Φ(self, old_x):
 		self.db['W'] = old_x
 
 		if self.db['kernel_type'] == 'rbf':
 			return gaussian_Φ(self.db)
+		elif self.db['kernel_type'] == 'rbf_slow':
+			return gaussian_Φ_slow(self.db)
 		elif self.db['kernel_type'] == 'linear':
 			return linear_Φ(self.db)
 		elif self.db['kernel_type'] == 'polynomial':
 			return polynomial_Φ(self.db)
+		elif self.db['kernel_type'] == 'relative':
+			return relative_Φ(self.db)
 
 	def update_f(self):
-		write_to_current_line('\tAt update_f\n')
+		#write_to_current_line('\tAt update_f\n')
 		self.db['W'] = self.optimizer.run(self.db['W'])
 
 	def compute_cost(self, W=None):
@@ -67,11 +89,13 @@ class linear_unsupv_dim_reduction(algorithm):
 		return -np.sum(γ*Kx)
 
 	def update_U(self):
+		db = self.db
 		k = self.db['num_of_clusters']
 
-		[Kx, D] = Kx_D_given_W(self.db, setW=self.db['W'])
-		L = D.dot(Kx).dot(D)
-		L = double_center(L, self.H)
+		[Kx, db['D_inv']] = Kx_D_given_W(db, setW=db['W'])
+		L = db['D_inv'].dot(Kx).dot(db['D_inv'])
+		#L = double_center(L, self.H)
+
 		[self.U, U_λ] = eig_solver(L, k, mode='largest')
 
 		if self.U_λ is None:
@@ -85,73 +109,124 @@ class linear_unsupv_dim_reduction(algorithm):
 	def initialize_U(self):
 		db = self.db
 		k = db['num_of_clusters']
-		X = db['Dloader'].X
-		σ = db['Dloader'].σ
+		X = db['data'].X
+		σ = db['data'].σ
 
-		L = rbk_sklearn(X, σ)       	
-		np.fill_diagonal(L, 0)
-		L = double_center(L, self.H)
+		#L = rbk_sklearn(X, σ)       	
+		#np.fill_diagonal(L, 0)
+
+		if self.db['kernel_type'] == 'relative':
+			σ_list = 1.0/relative_σ(db['data'].X)
+			db['Σ'] = σ_list.dot(σ_list.T)
+
+		[Kx, db['D_inv']] = Kx_D_given_W(db, setW=np.eye(db['data'].d))
+		L = db['D_inv'].dot(Kx).dot(db['D_inv'])
+		#L = double_center(L, self.H)
+
 		[self.U, self.U_λ] = eig_solver(L, k, mode='largest')
-
 		U_normed = normalize_U(self.U)
-		[allocation, self.original_nmi] = kmeans(k, U_normed, db['Dloader'].Y)
+		[allocation, self.original_nmi] = kmeans(k, U_normed, db['data'].Y)
 		print('\t\tOriginal NMI %.3f'%self.original_nmi)
 		#import pdb; pdb.set_trace()	
 
 	def initialize_W(self):
 		db = self.db
-		k = db['num_of_clusters']
-		X = db['Dloader'].X
-		Y = db['Dloader'].Y
-		σ = db['Dloader'].σ
+		#k = db['num_of_clusters']
+		#X = db['data'].X
+		#Y = db['data'].Y
+		#σ = db['data'].σ
 
-		c = 1.0/(2*σ*σ)
-		γ = self.update_γ()
-		Ψ=c*γ
-		D_Ψ = compute_Degree_matrix(Ψ)
-		Φ = 2*X.T.dot(D_Ψ - Ψ).dot(X); 			#debug.compare_Φ(db, Φ, Ψ)
+		#c = 1.0/(2*σ*σ)
+		#γ = self.update_γ()
+		#Ψ=c*γ
+		#D_Ψ = compute_Degree_matrix(Ψ)
+		#Φ = 2*X.T.dot(D_Ψ - Ψ).dot(X); 			#debug.compare_Φ(db, Φ, Ψ)
 
-		[new_W, W_λ] = eig_solver(Φ, db['q'], mode='smallest')
-		db['W'] = new_W
+
+
+		if db['kernel_type'] == 'rbf':
+			Φ = gaussian_Φ_0(db)
+		elif db['kernel_type'] == 'rbf_slow':
+			Φ = gaussian_Φ_0(db)
+		elif db['kernel_type'] == 'linear':
+			Φ = linear_Φ_0(db)
+		elif db['kernel_type'] == 'polynomial':
+			Φ = polynomial_Φ_0(db)
+		elif db['kernel_type'] == 'relative':
+			if 'Σ' not in db:
+				σ_list = 1.0/relative_σ(db['data'].X)
+				db['Σ'] = σ_list.dot(σ_list.T)
+			Φ = relative_Φ_0(db)
+
+		[db['W'], db['W_λ']] = eig_solver(Φ, db['q'], mode='smallest')
 	
+
+		### debug
+		#nmi = self.alt_Spectral_Clustering(db)
+		#print('\t\tOriginal W NMI %.3f'%nmi)
+		#import pdb; pdb.set_trace()	
+
+
+	def get_clustering_result(self):
+		Y = self.db['data'].Y
+		k = self.db['num_of_clusters']
+		
+		U_normed = normalize_U(self.U)
+		allocation = kmeans(k, U_normed)
+		return allocation
+
 	def outer_converge(self):
 		if self.U_diff < 0.01:
-			print('\tU_diff %.3f'% self.U_diff)
+			#print('\tU_diff %.3f'% self.U_diff)
 			return True
 		else:
-			print('\tU_diff %.3f'% self.U_diff)
+			#print('\tU_diff %.3f'% self.U_diff)
 			return False
+
+	def alt_Spectral_Clustering(self, db):
+		k = db['num_of_clusters']
+		[Kx, db['D_inv']] = Kx_D_given_W(db, setW=db['W'])
+		#Kx = double_center(Kx, self.H)
+		L = db['D_inv'].dot(Kx).dot(db['D_inv'])
+		[self.U, self.U_λ] = eig_solver(L, k, mode='largest')
+	
+		U_normed = normalize_U(self.U)
+		[allocation, nmi] = kmeans(k, U_normed, db['data'].Y)
+		return nmi
 
 
 	def verify_result(self, start_time):
 		db = self.db
+		if 'ignore_verification' in db: return
+
 		k = db['num_of_clusters']
-		σ = db['Dloader'].σ
+		σ = db['data'].σ
 
 		final_cost = self.compute_cost()
-		db['Dloader'].load_validation()
+		db['data'].load_validation()
 		outstr = '\nExperiment : linear unsupervised dimensionality reduction : %s with final cost : %.3f\n'%(db['data_name'], final_cost)
 
-		Y = db['Dloader'].Y
-		X = db['Dloader'].X
+		Y = db['data'].Y
+		X = db['data'].X
 
-		X_valid = db['Dloader'].X_valid
-		Y_valid = db['Dloader'].Y_valid
+		X_valid = db['data'].X_valid
+		Y_valid = db['data'].Y_valid
 
 		outstr += self.verification_basic_info(start_time)
 		
-		if not db['run_only_validation']:
-			U_normed = normalize_U(self.U)
-			[allocation, nmi] = kmeans(k, U_normed, Y)
+		U_normed = normalize_U(self.U)
+		[allocation, nmi] = kmeans(k, U_normed, Y)
 
-			outstr += '\t\tTraining clustering NMI without dimension reduction : %.3f'%self.original_nmi + '\n'
-			outstr += '\t\tTraining clustering NMI with dimension reduction : %.3f'%nmi + '\n'
+		outstr += '\t\tTraining clustering NMI without dimension reduction : %.3f'%self.original_nmi + '\n'
+		outstr += '\t\tTraining clustering NMI with dimension reduction : %.3f'%nmi + '\n'
 
-		[allocation, nmi_orig] = my_spectral_clustering(X_valid, k, σ, H=self.H, Y=Y_valid)
-		[allocation, nmi] = my_spectral_clustering(X_valid.dot(db['W']), k, σ, H=self.H, Y=Y_valid)
 
-		outstr += '\t\tTest clustering NMI without dimension reduction : %.3f'%nmi_orig + '\n'
-		outstr += '\t\tTest clustering NMI with dimension reduction : %.3f'%nmi + '\n'
+		if db['separate_data_for_validation']:
+			[allocation, nmi_orig] = my_spectral_clustering(X_valid, k, σ, H=self.H, Y=Y_valid)
+			nmi = self.alt_Spectral_Clustering(db)
+
+			outstr += '\t\tTest clustering NMI without dimension reduction : %.3f'%nmi_orig + '\n'
+			outstr += '\t\tTest clustering NMI with dimension reduction : %.3f'%nmi + '\n'
 
 
 

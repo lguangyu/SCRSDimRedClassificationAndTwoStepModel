@@ -2,6 +2,10 @@
 
 import os 
 
+def file_exists(path):
+	if os.path.exists(path): return True
+	return False
+
 def ensure_path_exists(path):
 	if os.path.exists(path): return True
 	os.mkdir(path)

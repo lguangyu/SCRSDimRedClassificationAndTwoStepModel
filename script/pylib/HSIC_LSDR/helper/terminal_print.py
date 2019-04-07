@@ -18,4 +18,8 @@ def clear_previous_line():
 	sys.stdout.flush()
 	clear_current_line()
 
+def loss_optimization_printout(db, epoch, avgLoss, avgGrad, epoc_loop, slope):
+	if 'silent_optimization' in db: return
+	sys.stdout.write("\r\t\t%d/%d, MaxLoss : %f, AvgGra : %f, progress slope : %f" % (epoch, epoc_loop, avgLoss, avgGrad, slope))
+	sys.stdout.flush()
 
