@@ -4,9 +4,13 @@ import functools
 import numpy
 import sklearn.decomposition
 import sklearn.discriminant_analysis
+import sys
 from . import base_class
-from . import HSIC_LSDR
+#from . import HSIC_LSDR
 from . import mixin
+# HSIC
+sys.path.append("./src")
+import LSDR as HSIC_LSDR
 
 
 _DIM_REDUCERS = dict()
@@ -63,27 +67,36 @@ class LDA(SklearnDimReducerAliasMethodsMixin,\
 
 @register_dim_reducer("lsdr")
 class LSDR(base_class.ABCDimensionReducer):
+	@property
+	def n_components(self):
+		return self._n_components
+	@n_components.setter
+	def n_components(self, value):
+		if value >= 1:
+			self._n_components = value
+			return
+		raise ValueError("n_components must be postitive")
+
 	# wrapper class for Chieh's LSDR
 	# linear supervised dimension reduction using HSIC
 	def __init__(self, n_components, **kw):
 		# n_clusters can be acquired
 		# when training data passed to fit()
 		super(LSDR, self).__init__(**kw)
-		if n_components < 0:
-			raise ValueError("n_components must be postitive")
-		self.reduce_dim_to = n_components
+		self.n_components = n_components
 		return
 
 	def _make_db(self, X, Y):
 		# num of classes in labels (Y)
-		self.num_of_clusters = len(numpy.unique(Y))
+		self.n_clusters = len(numpy.unique(Y))
 		# self.db is a local storage
 		self.db = dict(
 			X = X,
 			Y = Y,
-			num_of_clusters = self.num_of_clusters,
-			q = self.reduce_dim_to,
+			num_of_clusters = self.n_clusters,
+			q = self.n_components,
 			λ_ratio = 0.0,
+			#λ = 0.0,
 			center_and_scale = False # we do it manually
 		)
 		return self.db
@@ -113,7 +126,9 @@ class LSDR_REG(LSDR, mixin.RegularizerMixin):
 	def train(self, X, Y):
 		db = self._make_db(X, Y)
 		# update regularizer
+		print(self.regularizer)
 		db["λ_ratio"] = self.regularizer
+		#db["λ"] = self.regularizer
 		self.sdr = HSIC_LSDR.LSDR(db)
 		self.sdr.train()
 		return
