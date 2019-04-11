@@ -39,7 +39,7 @@ class test_base():
 		db['center_and_scale'] = True
 		db['poly_power'] = 3
 		db['poly_constant'] = 1
-		if 'kernel_type' not in db: db['kernel_type'] = 'relative'		#rbf, linear, rbf_slow, polynomial, relative
+		if 'kernel_type' not in db: db['kernel_type'] = 'rbf'		#rbf, linear, rbf_slow, polynomial, relative
 		self.db = db
 
 
