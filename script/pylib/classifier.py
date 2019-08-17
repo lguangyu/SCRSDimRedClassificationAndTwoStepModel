@@ -112,7 +112,7 @@ class SVMLinearCV(SVMLinear):
 				best_c = c
 		# retrain with best c
 		self.set_params(C = c)
-		self.train(X, Y)
+		super(SVMLinearCV, self).train(X, Y)
 		return
 
 
@@ -140,7 +140,7 @@ class KSVM_RBF_CV(KSVM_RBF):
 				best_c = c
 		# retrain with best c
 		self.set_params(C = c)
-		self.train(X, Y)
+		super(KSVM_RBF_CV, self).train(X, Y)
 		return
 
 
