@@ -57,8 +57,7 @@ def level1_mean(model_cvs, metric) -> "training, testing":
 	KEY = _METRIC_KEYS[metric]
 	ret = []
 	for s in ["training", "testing"]:
-		_extracted = [xmean(i[s]["level_1"][KEY])\
-			for i in model_cvs]
+		_extracted = [xmean(i[s]["level_1"][KEY]) for i in model_cvs]
 		ret.append(_mean_std(_extracted))
 	return tuple(ret)
 
@@ -92,25 +91,24 @@ def summarize_and_print(results, metric, file = sys.stdout):
 		"lv2_p0_train", "lv2_p0_test",\
 		"lv2_p1_train", "lv2_p1_test",\
 		"lv2_p2_train", "lv2_p2_test"]), file = file)
-	for m in sorted(results.keys()):
-		res = results[m] # ensure sorted, rather than arbitrary order by items()
-		lv1_train, lv1_test = level1_mean(res, metric)
-		lv2_overall_train, lv2_overall_test = level2_overall_mean(res, metric)
-		lv2_p0_train, lv2_p0_test = level2_per_level1_mean(res, 0, metric)
-		lv2_p1_train, lv2_p1_test = level2_per_level1_mean(res, 1, metric)
-		lv2_p2_train, lv2_p2_test = level2_per_level1_mean(res, 2, metric)
-		print("\t".join([m, lv1_train, lv1_test,
-			lv2_overall_train, lv2_overall_test,
-			lv2_p0_train, lv2_p0_test,
-			lv2_p1_train, lv2_p1_test,
-			lv2_p2_train, lv2_p2_test]), file = file)
+	res = results["evaluation"]
+	lv1_train, lv1_test = level1_mean(res, metric)
+	lv2_overall_train, lv2_overall_test = level2_overall_mean(res, metric)
+	lv2_p0_train, lv2_p0_test = level2_per_level1_mean(res, 0, metric)
+	lv2_p1_train, lv2_p1_test = level2_per_level1_mean(res, 1, metric)
+	lv2_p2_train, lv2_p2_test = level2_per_level1_mean(res, 2, metric)
+	print("\t".join([results["model"], lv1_train, lv1_test,
+		lv2_overall_train, lv2_overall_test,
+		lv2_p0_train, lv2_p0_test,
+		lv2_p1_train, lv2_p1_test,
+		lv2_p2_train, lv2_p2_test]), file = file)
 	return
 
 
 def main():
 	args = get_args()
 	results = load_results_from_json(args.input)
-	summarize_and_print(results["models"], args.metric)
+	summarize_and_print(results, args.metric)
 	return
 
 

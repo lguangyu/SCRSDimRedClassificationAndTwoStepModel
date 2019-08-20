@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 
-import sys
-import os
 import argparse
+import itertools
+import json
+import matplotlib
+import matplotlib.cm
+import matplotlib.colors
+import matplotlib.pyplot
 import numpy
+import os
+import sys
 import warnings
 
 
@@ -13,71 +19,64 @@ SUMMARIZE_CLASSIFIERS = [
 	dict(id = "lda", display_name = "LDA"),
 	dict(id = "svm_lin", display_name = "Linear SVM"),
 	dict(id = "svm_rbf", display_name = "RBF SVM"),
+	dict(id = "svm_lin_cv", display_name = "Lin-SVM (CV)"),
+	dict(id = "svm_rbf_cv", display_name = "KSVM (CV)"),
 ]
 
 SUMMARIZE_DIMREDUC = [
 	dict(id = "none_none",	display_name = "N/A"),
-	dict(id = "pca_%d",		display_name = "PCA(%d)"),
-	dict(id = "lda_%d",		display_name = "LDA(%d)"),
-	dict(id = "lsdr_%d",	display_name = "LSDR(%d)"),
+	dict(id = "pca_26",		display_name = "PCA(26)"),
+	dict(id = "lda_26",		display_name = "LDA(26)"),
+	dict(id = "lsdr_26",	display_name = "LSDR(26)"),
 ]
 
 
 def get_args():
 	ap = argparse.ArgumentParser()
-	ap.add_argument("-i", "--input-prefix",
-		type = str, metavar = "prefix", required = True,
+	ap.add_argument("-i", "--input-prefix", type = str,
+		metavar = "prefix", required = True,
 		help = "prefix of cross validation results (required)")
-	ap.add_argument("-o", "--output-prefix",
-		type = str, metavar = "prefix", required = True,
+	ap.add_argument("-o", "--output-prefix", type = str,
+		metavar = "prefix", required = True,
 		help = "prefix of output summary (required)")
-	ap.add_argument("-d", "--delimiter",
-		type = str, metavar = "char", default = "\t",
+	ap.add_argument("-d", "--delimiter", type = str,
+		metavar = "char", default = "\t",
 		help = "delimiter in input/output file (default: <tab>)")
-	ap.add_argument("-r", "--reduc-dims-to",
-		type = int, metavar = "int", required = True,
-		help = "summary the results with this dimension reduction methods are\
-			trained to reduce to this dimension (required)")
-	ap.add_argument("-t", "--row-tag",
-		type = str, metavar = "str", default = "accuracy",
-		help = "the tag of row to be extracted (default: accuracy)")
-	ap.add_argument("--without-png", action = "store_true",
-		help = "do not plot (default: off)")
+	ap.add_argument("-m", "--metric", type = str,
+		metavar = "str", default = "average_accuracy",
+		help = "metric to of model performance evaluation "
+			"(default: average_accuracy)")
 	args = ap.parse_args()
 	return args
 
 
-def get_results_by_rowtag(fname, rowtag, delimiter = "\t"):
+def get_results_from_json(fname, eval_key) -> list:
 	if not os.path.isfile(fname):
 		warnings.warn("file '%s' does not exists, skipping" % fname)
 		return None
 	with open(fname, "r") as fh:
-		lines = fh.read().splitlines()
-	for l in lines:
-		l = l.split(delimiter)
-		if l[0] == rowtag:
-			return numpy.asarray(l[1:], dtype = float)
-	warnings.warn("no rowtag '%s' found in file '%s'" % (rowtag, fname))
-	return None
+		res = json.load(fh)
+		# extract testing average_accuracy from all folds
+		ret = [i["testing"]["average_accuracy"] for i in res["folds"]]
+	return ret
 
 
-def load_and_combine_results(prefix, rowtag, delimiter, reduc_dims_to):
+def load_and_combine_results(prefix, eval_key):
 	# load/extract results <rowtag> from multiple files
 	# organize 1st dim as classification method
 	# 2nd dim as dim reduction methods
 	# 3nd dim as folds from cross validation
 	ret = []
-	for classifier in SUMMARIZE_CLASSIFIERS:
+	fname_proto = "%s.%s.dr_%s.10_fold.txt"
+	for cls in SUMMARIZE_CLASSIFIERS:
 		r = []
-		for dimreduc in SUMMARIZE_DIMREDUC:
-			try:
-				ifile = "%s.%s.dr_%s.10_fold.overall.txt"\
-					% (prefix, classifier["id"], dimreduc["id"] % reduc_dims_to)
-			except TypeError as e:
-				ifile = "%s.%s.dr_%s.10_fold.overall.txt"\
-					% (prefix, classifier["id"], dimreduc["id"])
-			r.append(get_results_by_rowtag(ifile, rowtag, delimiter))
+		for dr in SUMMARIZE_DIMREDUC:
+			ifn = fname_proto % (prefix, cls["id"], dr["id"])
+			_res = get_results_from_json(ifn, eval_key)
+			r.append([numpy.nan] * 10 if _res is None else _res)
 		ret.append(r)
+	ret = numpy.asarray(ret, dtype = float)
+	assert ret.ndim == 3
 	return ret
 
 
@@ -86,10 +85,8 @@ def compute_mean_stdev(data):
 	compute mean and stdev of a 3-d array along its third dimension
 	some cell may appear a None
 	"""
-	mean  = [[(numpy.nan if c is None else c.mean()) for c in r] for r in data]
-	stdev = [[(numpy.nan if c is None else c.std())  for c in r] for r in data]
-	mean = numpy.asarray(mean, dtype = float)
-	stdev = numpy.asarray(stdev, dtype = float)
+	mean = data.mean(axis = 2)
+	stdev = data.std(axis = 2)
 	return mean, stdev
 
 
@@ -110,95 +107,139 @@ def savetxt(fname, mean, stdev, delimiter):
 	return
 
 
-def save_tableplot(fname, mean, stdev, reduc_dims_to, title = ""):
-	# lazy load
-	from matplotlib import pyplot
+def save_tableplot(fname, mean, stdev, title = ""):
+	assert mean.shape == stdev.shape
 	# layout
-	figure = pyplot.figure(figsize = (10, 4))
-	axes = figure.add_axes([0.15, 0.10, 0.80, 0.70]) # tabular
-	cmax = figure.add_axes([0.85, 0.10, 0.06, 0.70]) # colorbar
-	# hide axes box
-	for ax in [axes, cmax]:
-		for sp in ax.spines.values():
-			sp.set_visible(False)
-	# hide ticks
-	axes.tick_params(
-		top = False, labeltop = False,
-		bottom = False, labelbottom = False,
-		left = False, labelleft = False,
-		right = False, labelright = False)
-	cmax.tick_params(
-		top = False, labeltop = False,
-		bottom = False, labelbottom = False,
-		left = False, labelleft = False,
-		right = True, labelright = True)
-	# invert y axis
-	axes.invert_yaxis()
-	# plot mean
-	alpha = 0.8
-	cmap = pyplot.get_cmap("bwr")
-	axes.pcolor(mean, alpha = alpha, cmap = cmap, vmin = -1.0, vmax = 1.0)
-	# cell text labels 
-	nr, nc = mean.shape
-	for i in range(nr):
-		for j in range(nc):
-			value = mean[i, j]
-			_std = stdev[i, j]
-			text = "N/A" if numpy.isnan(value) else ("%.3f (%.2f)" % (value, _std))
-			# if blue is dark, use white; else black
-			color = "#FFFFFF" if value > 0.6 else "#000000"
-			axes.text(x = j + 0.5, y = i + 0.5, s = text,
-				color = color, fontsize = 12, fontweight = "bold",
-				horizontalalignment = "center", verticalalignment = "center")
-	# x labels
-	for i, dimreduc in enumerate(SUMMARIZE_DIMREDUC):
-		try:
-			col_header = dimreduc["display_name"] % reduc_dims_to
-		except TypeError as e:
-			col_header = dimreduc["display_name"]
-		axes.text(x = i + 0.5, y = -0.3, s = col_header,
-			clip_on = False, color = "k", fontsize = 14,
+	nrow, ncol			= mean.shape
+	left_margin_inch	= 0.2
+	right_margin_inch	= 0.2
+	top_margin_inch		= 0.2
+	bottom_margin_inch	= 0.2
+	# table
+	table_patch_alpha		= 0.8
+	table_left_pad_inch		= 1.6
+	table_top_pad_inch		= 0.8
+	table_cell_width_inch	= 1.6
+	table_cell_height_inch	= 0.6
+	table_width_inch		= table_cell_width_inch * ncol
+	table_height_inch		= table_cell_height_inch * nrow
+	# colorbar
+	table_colorbar_gap_inch	= 0.2
+	colorbar_right_pad_inch	= 0.5
+	colorbar_width_inch		= 0.6
+	colorbar_height_inch	= table_height_inch # align to table
+	# create figure
+	figure_width_inch		= left_margin_inch + table_left_pad_inch\
+		+ table_width_inch + table_colorbar_gap_inch + colorbar_width_inch\
+		+ colorbar_right_pad_inch + right_margin_inch
+	figure_height_inch		= bottom_margin_inch + table_height_inch\
+		+ table_top_pad_inch + top_margin_inch
+	figure = matplotlib.pyplot.figure(figsize =\
+		(figure_width_inch, figure_height_inch))
+	# create table axes
+	table_left		= (left_margin_inch + table_left_pad_inch) / figure_width_inch
+	table_bottom	= bottom_margin_inch / figure_height_inch
+	table_width		= table_width_inch / figure_width_inch
+	table_height		= table_height_inch / figure_height_inch
+	table_axes		= figure.add_axes([table_left, table_bottom,
+		table_width, table_height])
+	# create colorbar axes
+	colorbar_left	= (left_margin_inch + table_left_pad_inch + table_width_inch\
+		+ table_colorbar_gap_inch) / figure_width_inch
+	colorbar_bottom	= table_bottom # align to table
+	colorbar_width	= colorbar_width_inch / figure_width_inch
+	colorbar_height	= colorbar_height_inch / figure_height_inch
+	colorbar_axes		= figure.add_axes([colorbar_left, colorbar_bottom,
+		colorbar_width, colorbar_height])
+	# style table axes
+	for sp in table_axes.spines.values():
+		sp.set_visible(False)
+	table_axes.tick_params(left = False, right = False, bottom = False,
+		top = False, labelleft = True, labelright = False, labeltop = True,
+		labelbottom = False)
+	# style colorbar axes
+	for sp in colorbar_axes.spines.values():
+		sp.set_visible(False)
+
+	# plot table
+	cmap = matplotlib.colors.LinearSegmentedColormap(None, N = 1024, gamma = 1.0,
+		segmentdata = {
+			"red": [
+				(0.0,	1.0,	1.0),
+				(1.0,	1.0,	1.0),
+			],
+			"green": [
+				(0.0,	1.0,	1.0),
+				(1.0,	0.0,	0.0),
+			],
+			"blue": [
+				(0.0,	1.0,	1.0),
+				(1.0,	0.0,	0.0),
+			],
+		})
+	table = table_axes.pcolor(mean, cmap = cmap, vmin = 0.0, vmax = 1.0,
+		alpha = table_patch_alpha)
+	# add text to cell
+	for r, c in itertools.product(range(nrow), range(ncol)):
+		_vmean, _vstd = mean[r, c], stdev[r, c]
+		text = "N/A" if numpy.isnan(_vmean) else ("%.3f (%.2f)" % (_vmean, _vstd))
+		# if blackground is dark, use white; else black
+		color = "#FFFFFF" if _vmean > 0.6 else "#000000"
+		table_axes.text(x = c + 0.5, y = r + 0.5, s = text, color = color,
+			fontsize = 12, fontweight = "bold",
 			horizontalalignment = "center", verticalalignment = "center")
-	# y labels
-	for i, classifier in enumerate(SUMMARIZE_CLASSIFIERS):
-		axes.text(x = -0.1, y = i + 0.5, s = classifier["display_name"],
-			clip_on = False, color = "k", fontsize = 14,
-			horizontalalignment = "right", verticalalignment = "center")
-	# axis limits
-	axes.set_xlim(0, mean.shape[1])
-	axes.set_xlim(0, mean.shape[0])
-	# color bar
-	gradient = numpy.linspace(0, 1, 256).reshape(-1, 1)
-	cmax.imshow(gradient, alpha = alpha, aspect = "auto", cmap = cmap)
-	cmax.invert_yaxis()
-	# yticks
-	cmax_ymin, cmax_ymax = 128, 256
-	cmax_yrange = cmax_ymax - cmax_ymin
-	yticks = numpy.linspace(cmax_ymin, cmax_ymax, 5)
-	yticklabels = ["%.1f" % ((i - cmax_ymin) / cmax_yrange) for i in yticks]
-	cmax.set_ylim(cmax_ymin, cmax_ymax)
-	cmax.set_yticks(yticks)
-	cmax.set_yticklabels(yticklabels)
+
 	# misc
-	figure.suptitle(title, fontsize = 18, verticalalignment = "top")
-	pyplot.savefig(fname)
-	#pyplot.show()
-	pyplot.close()
+	# x labels
+	xticks = numpy.arange(ncol) + 0.5
+	xticklabels = [i["display_name"] for i in SUMMARIZE_DIMREDUC]
+	table_axes.set_xticks(xticks)
+	table_axes.set_xticklabels(xticklabels, color = "#000000", fontsize = 14,
+		horizontalalignment = "center", verticalalignment = "bottom")
+	# y labels
+	yticks = numpy.arange(nrow) + 0.5
+	yticklabels = [i["display_name"] for i in SUMMARIZE_CLASSIFIERS]
+	table_axes.set_yticks(yticks)
+	table_axes.set_yticklabels(yticklabels, color = "#000000", fontsize = 14,
+		horizontalalignment = "right", verticalalignment = "center")
+	# axis limits
+	table_axes.set_xlim(0, ncol)
+	table_axes.set_ylim(0, nrow)
+	table_axes.invert_yaxis()
+
+	# color bar
+	colorbar = figure.colorbar(table, cax = colorbar_axes,
+		alpha = table_patch_alpha)
+	# misc
+	colorbar.outline.set_visible(False)
+	## yticks
+	#cmax_ymin, cmax_ymax = 128, 256
+	#cmax_yrange = cmax_ymax - cmax_ymin
+	#yticks = numpy.linspace(cmax_ymin, cmax_ymax, 5)
+	#yticklabels = ["%.1f" % ((i - cmax_ymin) / cmax_yrange) for i in yticks]
+	#cmax.set_ylim(cmax_ymin, cmax_ymax)
+	#cmax.set_yticks(yticks)
+	#cmax.set_yticklabels(yticklabels)
+	## misc
+	figure.suptitle(title, fontsize = 18,
+		horizontalalignment = "center", verticalalignment = "top")
+	matplotlib.pyplot.savefig(fname, dpi = 300)
+	matplotlib.pyplot.close()
 	return
 
 
 def main():
 	args = get_args()
-	data = load_and_combine_results(args.input_prefix, args.row_tag, args.delimiter,\
-		args.reduc_dims_to)
+	data = load_and_combine_results(args.input_prefix, args.metric)
 	# calculate mean and std
 	mean, std = compute_mean_stdev(data)
 	# output
 	os.makedirs(os.path.dirname(args.output_prefix), exist_ok = True)
-	savetxt(args.output_prefix + ".tsv", mean, std, args.delimiter)
-	if not args.without_png:
-		title = args.input_prefix + ", " + args.row_tag + " summary"
-		save_tableplot(args.output_prefix + ".png", mean, std, args.reduc_dims_to, title = title)
+	#savetxt(args.output_prefix + ".tsv", mean, std, args.delimiter)
+	# plot
+	title = "%s, %s summary" % (args.input_prefix, args.metric)
+	fname = "%s.%s.summary.png" % (args.output_prefix, args.metric)
+	save_tableplot(fname, mean, std, title = title)
 	return
 
 

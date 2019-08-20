@@ -1,4 +1,5 @@
 # ignore data files
+archive/
 data/
 raw/
 #batch_script/
@@ -8,6 +9,7 @@ raw/
 image/
 intermediate/
 output/
+results/
 summary/
 
 # output html
