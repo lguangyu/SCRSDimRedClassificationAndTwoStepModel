@@ -34,7 +34,7 @@ class HSIC_LSDR(base.DimReducerAbstract):
 		ret = dict(X = X, Y = Y,
 			num_of_clusters = self.n_classes,
 			q = self.n_components,
-			#λ_ratio = 0.0,
+			λ_ratio = 0.0,
 			λ = self.penalty,
 			center_and_scale = False # we do it manually outside
 		)
