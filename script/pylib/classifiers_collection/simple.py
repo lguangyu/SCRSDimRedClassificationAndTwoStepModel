@@ -17,11 +17,15 @@ class GaussianNaiveBayesian(sklearn.naive_bayes.GaussianNB,
 		base.ClassifierAbstract):
 	pass
 
+
 @base.ClassifierCollection.register("lr", "logistic_regression")
 @base.ClassifierAbstract.serialize_init(as_name = "lr")
 class LogisticRegression(sklearn.linear_model.LogisticRegression,
 		base.ClassifierAbstract):
-	pass
+	# ok.. we have to do this
+	@functools.wraps(sklearn.linear_model.LogisticRegression.predict)
+	def predict(self, *ka, **kw):
+		return sklearn.linear_model.LogisticRegression.predict(self, *ka, **kw)
 
 
 @base.ClassifierCollection.register("lda", "linear_discriminant_analysis")
@@ -40,11 +44,14 @@ class LinearDiscriminantAnalysis(
 @base.ClassifierCollection.register("svm_lin", "linear_svm")
 @base.ClassifierAbstract.serialize_init(as_name = "svm_lin")
 class LinearSVM(sklearn.svm.LinearSVC, base.ClassifierAbstract):
-
 	@functools.wraps(sklearn.svm.LinearSVC.__init__)
 	def __init__(self, **kw):
 		super(LinearSVM, self).__init__(multi_class = "ovr", **kw)
 		return
+	# ok.. we have to do this
+	@functools.wraps(sklearn.svm.LinearSVC.predict)
+	def predict(self, *ka, **kw):
+		return sklearn.svm.LinearSVC.predict(self, *ka, **kw)
 
 
 @base.ClassifierCollection.register("svm_rbf", "rbf_kernel_svm")
