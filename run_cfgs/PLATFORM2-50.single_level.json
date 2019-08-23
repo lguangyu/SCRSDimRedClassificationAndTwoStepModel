@@ -1,5 +1,0 @@
-{
-	"data_file": "./data/PLATFORM2-50.normalized_l2.data.tsv",
-	"label_file": "./data/PLATFORM2-50.labels.tsv",
-	"label_col": 0
-}

@@ -29,7 +29,7 @@ class HSIC_LSDR(base.DimReducerAbstract):
 
 	def _make_db(self, X, Y):
 		# num of classes in labels (Y)
-		self.set_params(n_clusters = len(numpy.unique(Y)))
+		self.set_params(n_classes = len(numpy.unique(Y)))
 		# this is used by LSDR library routines
 		ret = dict(X = X, Y = Y,
 			num_of_clusters = self.n_classes,

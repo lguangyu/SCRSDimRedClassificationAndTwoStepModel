@@ -67,7 +67,7 @@ class RBFKernelSVM(sklearn.svm.SVC, base.ClassifierAbstract):
 		"""
 		return the gamma calculated with median of pairwise euclidean distances
 		"""
-		euc = sklearn.pairwise_distances(X, metric = "euclidean")
+		euc = sklearn.metrics.pairwise_distances(X, metric = "euclidean")
 		sigma = numpy.median(euc)
 		gamma = 0.5 / (sigma ** 2)
 		return gamma

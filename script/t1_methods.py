@@ -61,7 +61,12 @@ def get_args():
 
 def main():
 	args = get_args()
+	# create dataset
 	dataset = pylib.DatasetCollection.get_dataset(args.dataset)
+	if not isinstance(dataset, pylib.dataset.SingleLabelDataset):
+		raise ValueError("dataset used in this (1-level) model must be "
+			"SingleLabelDataset, but the specified '%s' is not"\
+			% args.dataset)
 	# create cross-validator
 	cv = pylib.model_structures.CrossValidator(
 		cv_props = dict(n_splits = args.cv_folds, **args.cv_shuffle))
