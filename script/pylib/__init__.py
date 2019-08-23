@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
-from . import classifier
-from . import dim_reducer
-from .cross_validator import SingleLevelCrossValidator, TwoLevelCrossValidator
-from .single_level_model import SingleLevelModel
-from .two_level_model import TwoLevelModel
-from .logger import Logger
-from .result_evaluate import LabelPredictEvaluate
+from . import util # must be first
+# import classifiers collection
+from . import evaluator
+from .classifiers_collection import ClassifierAbstract, ClassifierCollection
+# import dimension reduction collection
+from .dimreducers_collection import DimReducerAbstract, DimReducerCollection
+# import model structures
+from . import model_structures
+# datasets, DatasetCollection is the main interface
+from . import dataset
+from .dataset import DatasetCollection

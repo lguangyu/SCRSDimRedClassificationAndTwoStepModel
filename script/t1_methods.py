@@ -2,126 +2,85 @@
 
 import argparse
 import json
-import numpy
-import os
-import sklearn.model_selection
-import sklearn.preprocessing
 import sys
+# custom lib
 import pylib
 
 
 def get_args():
 	ap = argparse.ArgumentParser()
-	ap.add_argument("config", type = str,
-		help = "running config json file")
-	ap.add_argument("-f", "--cv-folds", type = int,
+	ap.add_argument("-i", "-d", "--dataset", type = str, required = True,
+		metavar = "dataset",
+		choices = pylib.DatasetCollection.get_registered_keys(),
+		help = "the dataset to run model on (required); choices: "\
+			+ (", ".join(pylib.DatasetCollection.get_registered_keys()))\
+			+ "; **some entries may have multiple aliases")
+	ap.add_argument("-o", "--output", type = str, default = "-",
+		metavar = "json",
+		help = "write output to this file instead of stdout")
+
+	# model parameters
+	gp = ap.add_argument_group(description = "model parameters")
+	gp.add_argument("-R", "--dimreducer", type = str, required = True,
+		metavar = "model",
+		choices = pylib.DimReducerCollection.get_registered_keys(),
+		help = "dimension reduction method (required); choices: "\
+			+ (", ".join(pylib.DimReducerCollection.get_registered_keys()))\
+			+ "; **some entries may have multiple aliases")
+	gp.add_argument("-D", "--reduce-dim-to", type = int, required = True,
+		metavar = "int",
+		help = "reduce dimensionality to this value, must be positive "
+			"(required)")
+	gp.add_argument("-C", "--classifier", type = str, required = True,
+		metavar = "model",
+		choices = pylib.ClassifierCollection.get_registered_keys(),
+		help = "classifier method (required); choices: "\
+			+ (", ".join(pylib.ClassifierCollection.get_registered_keys()))\
+			+ "; **some entries may have multiple aliases")
+
+	# cross validation parameters
+	gp = ap.add_argument_group(description = "cross-validation parameters")
+	gp.add_argument("-f", "--cv-folds", type = int,
 		metavar = "int", default = 10,
 		help = "n-fold cross validation, must be at least 2 (default: 10)")
-	ap.add_argument("-p", "--permutation", type = str,
-		metavar = "disable|random|int", default = "random",
-		help = "permutate samples, can be 'disable', 'random' "\
-			+ "or an integer as seed (default: random)")
-	#
-	gp = ap.add_argument_group("model settings")
-	gp.add_argument("-R", "--dim-reduc", type = str,
-		default = "none", choices = pylib.dim_reducer.list_registered(),
-		help = "choice of dimension reduction method (default: none)")
-	gp.add_argument("-D", "--reduce-dim-to", type = str,
-		metavar = "none|int", default = "none",
-		help = "reduce dimensionality to this value, must be positive "\
-			+ "and is required if --dim-reduc is not 'none', omitted otherwise")
-	gp.add_argument("-C", "--classifier", type = str, required = True,
-		choices = pylib.classifier.list_registered(),
-		help = "choice of classifier (required)")
-	#
-	gp = ap.add_argument_group("output settings")
-	gp.add_argument("--output-txt-dir", type = str,
-		metavar = "dir", default = "output",
-		help = "output txt results to this dir (default: output)")
-	gp.add_argument("--output-png-dir", type = str,
-		metavar = "dir", default = "image",
-		help = "output png results to this dir (default: image)")
+	gp.add_argument("--cv-shuffle",
+		type = pylib.util.arg_parsing.CVShuffleParam,
+		default = pylib.util.arg_parsing.CVShuffleParam("random"),
+		metavar = "random|int|disable",
+		help = "set random permuation state of the cross-validator invoked; "
+			"random = randomly shuffle samples for each .split() call; "
+			"int = use specific random seed; "
+			"disable = completely disable shuffling; (default: random)")
+
 	args = ap.parse_args()
-	# check args
-	# ckeck dimension reduction
-	if args.dim_reduc == "none":
-		args.reduce_dim_to = None # set this to none as omitted
-	else:
-		if args.reduce_dim_to == "none":
-			raise ValueError("--reduce-dim-to is required when --dim-reduc not none")
-		# turn string into int
-		args.reduce_dim_to = int(args.reduce_dim_to)
-		if args.reduce_dim_to <= 0:
-			raise ValueError("--reduce-dim-to must be positive")
+	# refine args
+	if args.output == "-":
+		args.output = sys.stdout
 	return args
-
-
-def print_runinfo(args, fh = sys.stdout):
-	arg_vars = vars(args)
-	for key in ["data", "meta", "classifier", "cv_folds",
-		"permutation", "dim_reduc", "reduce_dim_to"]:
-		print(key + ":", arg_vars[key], file = fh)
-
-
-def load_data(config) -> "data, label":
-	with open(config, "r") as fh:
-		cfg = json.load(fh)
-	# load data
-	data = numpy.loadtxt(cfg["data_file"], dtype = float, delimiter = "\t")
-	# load labels
-	with open(cfg["label_file"], "r") as fh:
-		labels = [line.replace("\n", "").split("\t")[cfg["label_col"]]\
-			for line in fh]
-	assert len(data) == len(labels), "%d|%d" % (len(data), len(labels))
-	return data, labels
 
 
 def main():
 	args = get_args()
-	#print_runinfo(args)
-	# load data
-	data, labels = load_data(args.config)
-	data = sklearn.preprocessing.scale(data)
-	assert numpy.isclose(numpy.mean(data, axis = 0), 0).all()
-	assert numpy.isclose(numpy.std(data, axis = 0), 1).all()
-	# preprocessing, encode labels
-	label_encoder = sklearn.preprocessing.LabelEncoder()
-	label_encoder.fit(labels)
-	encoded_labels = label_encoder.transform(labels)
-	# model
-	model = pylib.SingleLevelModel(\
-		dim_reducer = args.dim_reduc,\
-		classifier = args.classifier,\
-		dims_remain = args.reduce_dim_to)
-	# FIXME: this is temporary
-	if args.dim_reduc == "lsdr_reg":
-		model.regularizer_list = [0, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4]
-	# cross validation
-	cv = pylib.SingleLevelCrossValidator(model, args.cv_folds, args.permutation)
+	dataset = pylib.DatasetCollection.get_dataset(args.dataset)
+	# create cross-validator
+	cv = pylib.model_structures.CrossValidator(
+		cv_props = dict(n_splits = args.cv_folds, **args.cv_shuffle))
+	# create model
+	dimreducer_props = {"model": args.dimreducer,
+		"params": {"n_components": args.reduce_dim_to}}
+	classifier_props = {"model": args.classifier, "params": None}
+	model = pylib.model_structures.DimredClassifComplex(
+		dimreducer_props = dimreducer_props,
+		classifier_props = classifier_props)
 	# run cv
-	cv.run_cv(data, encoded_labels)
-
-	# results
-	results = {}
-	results["class_labels"] = list(label_encoder.classes_)
-	results["folds"] = cv.evaluation.copy()
+	cv.cross_validate(model, X = dataset.data, Y = dataset.label)
 	# output
-	os.makedirs(args.output_txt_dir, exist_ok = True)
-	txt_output = os.path.join(args.output_txt_dir,
-		"%s.%s.dr_%s_%s.%d_fold.txt" % (\
-			os.path.basename(args.config),
-			args.classifier,
-			args.dim_reduc, args.reduce_dim_to,
-			args.cv_folds))
-	with open(txt_output, "w") as fh:
-		json.dump(results, fh)
-	## save plots
-	#png_prefix = os.path.join(args.output_png_dir, args.output_str)
-	#boxplot_title = "%s, classifier=%s, dr=%s(%s), n_fold=%d"\
-	#	% (os.path.basename(args.data), args.classifier,
-	#	args.dim_reduc, str(args.reduce_dim_to), args.cv_folds)
-	#cv.savefig_boxplot(png_prefix, uniq_labels, lab_encoder,
-	#	title = boxplot_title)
+	out = dict(mode = "1-level",
+		labels = dataset.label_encoder.classes_.tolist(),
+		results = cv.get_cv_results())
+	with pylib.util.file_io.get_fh(args.output, "w") as fp:
+		json.dump(out, fp, sort_keys = True,
+			cls = pylib.util.serializer.SerializerJSONEncoder)
 	return
 
 
