@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import glob
 import itertools
 import json
 import matplotlib
@@ -10,107 +11,114 @@ import matplotlib.pyplot
 import numpy
 import os
 import sys
-import warnings
-
-
-SUMMARIZE_CLASSIFIERS = [
-	dict(id = "gnb", display_name = "GNB"),
-	dict(id = "lr", display_name = "LR"),
-	dict(id = "lda", display_name = "LDA"),
-	dict(id = "svm_lin", display_name = "Linear SVM"),
-	dict(id = "svm_rbf", display_name = "RBF SVM"),
-	dict(id = "svm_lin_cv", display_name = "Lin-SVM (CV)"),
-	dict(id = "svm_rbf_cv", display_name = "KSVM (CV)"),
-]
-
-SUMMARIZE_DIMREDUC = [
-	dict(id = "none_none",	display_name = "N/A"),
-	dict(id = "pca_26",		display_name = "PCA(26)"),
-	dict(id = "lda_26",		display_name = "LDA(26)"),
-	dict(id = "lsdr_26",	display_name = "LSDR(26)"),
-]
+# custom lib
+import pylib
 
 
 def get_args():
 	ap = argparse.ArgumentParser()
-	ap.add_argument("-i", "--input-prefix", type = str,
-		metavar = "prefix", required = True,
-		help = "prefix of cross validation results (required)")
-	ap.add_argument("-o", "--output-prefix", type = str,
-		metavar = "prefix", required = True,
-		help = "prefix of output summary (required)")
-	ap.add_argument("-d", "--delimiter", type = str,
-		metavar = "char", default = "\t",
-		help = "delimiter in input/output file (default: <tab>)")
+	ap.add_argument("input", nargs = "+",
+		help = "input cross validation results, wildcard accepted")
+	ap.add_argument("-o", "--output", type = str, default = "-",
+		metavar = "tsv",
+		help = "write summary table to this file instead of stdout")
 	ap.add_argument("-m", "--metric", type = str,
 		metavar = "str", default = "average_accuracy",
-		help = "metric to of model performance evaluation "
-			"(default: average_accuracy)")
+		help = "metric of model evaluation (default: average_accuracy)")
+	ap.add_argument("-p", "--plot", type = str,
+		metavar = "png",
+		help = "also output a tabular plot (default: off)")
 	args = ap.parse_args()
+	# refine args
+	if args.output == "-":
+		args.output = sys.stdout
 	return args
 
 
-def get_results_from_json(fname, eval_key) -> list:
-	if not os.path.isfile(fname):
-		warnings.warn("file '%s' does not exists, skipping" % fname)
-		return None
-	with open(fname, "r") as fh:
-		res = json.load(fh)
-		# extract testing average_accuracy from all folds
-		ret = [i["testing"]["average_accuracy"] for i in res["folds"]]
-	return ret
-
-
-def load_and_combine_results(prefix, eval_key):
-	# load/extract results <rowtag> from multiple files
-	# organize 1st dim as classification method
-	# 2nd dim as dim reduction methods
-	# 3nd dim as folds from cross validation
+def load_all_results(inputs) -> list:
+	assert isinstance(inputs, list)
 	ret = []
-	fname_proto = "%s.%s.dr_%s.10_fold.txt"
-	for cls in SUMMARIZE_CLASSIFIERS:
-		r = []
-		for dr in SUMMARIZE_DIMREDUC:
-			ifn = fname_proto % (prefix, cls["id"], dr["id"])
-			_res = get_results_from_json(ifn, eval_key)
-			r.append([numpy.nan] * 10 if _res is None else _res)
-		ret.append(r)
-	ret = numpy.asarray(ret, dtype = float)
-	assert ret.ndim == 3
+	for i in inputs:
+		for f in glob.glob(i):
+			with open(f, "r") as fp:
+				ret.append(json.load(fp))
 	return ret
 
 
-def compute_mean_stdev(data):
-	"""
-	compute mean and stdev of a 3-d array along its third dimension
-	some cell may appear a None
-	"""
-	mean = data.mean(axis = 2)
-	stdev = data.std(axis = 2)
-	return mean, stdev
+def _as_unique(query_func, sequential):
+	assert set([1]).pop() == 1 # check set.pop() returns a value
+	vals = set(map(query_func, sequential))
+	if len(vals) != 1: # if unique, it should only contain one element
+		raise ValueError("expected unique, got %d value(s): %s"\
+			% (len(vals), str(vals)))
+	return vals.pop()
 
 
-def savetxt(fname, mean, stdev, delimiter):
-	with open(fname, "w") as fh:
-		# header
-		col_headers = list(map(lambda i: i["display_name"], SUMMARIZE_DIMREDUC))
-		header = delimiter.join([""] + col_headers)
-		print(header, file = fh)
-		# data
-		for i, classifier in enumerate(SUMMARIZE_CLASSIFIERS):
-			# each line is a classifier
-			line = [classifier["display_name"]] # classifier name
-			for j, dimreduc in enumerate(SUMMARIZE_DIMREDUC):
-				_str = "%.3f (%.2f)" % (mean[i, j], stdev[i, j])
-				line.append(_str)
-			print(delimiter.join(line), file = fh)
+def _get_model_info(res):
+	assert isinstance(res, dict), type(res)
+	cvs = res["results"]
+	dr = _as_unique(lambda x: x["dimreducer"]["model"], cvs)
+	cf = _as_unique(lambda x: x["classifier"]["model"], cvs)
+	nd = None
+	try:
+		_nd_query = lambda x: x["dimreducer"]["params"]["n_components"]
+		nd = _as_unique(_nd_query, cvs)
+	except (KeyError, TypeError):
+		pass
+	return dict(dimreducer = dr, n_components = nd, classifier = cf)
+
+
+def _get_metric_mean_std(res, metric):
+	_ev_query = lambda x: x["evaluation"]["testing"][metric]
+	vals = list(map(_ev_query, res["results"]))
+	_mean = numpy.mean(vals)
+	_std = numpy.std(vals)
+	return _mean, _std
+
+
+def condense_results(all_res, metric):
+	assert isinstance(all_res, list), type(all_res)
+	# dataset info
+	dataset = _as_unique(lambda x: x["dataset"], all_res)
+	models = [_get_model_info(i) for i in all_res]
+	# combine models
+	drs = sorted(set(map(lambda x: x["dimreducer"], models)))
+	cfs = sorted(set(map(lambda x: x["classifier"], models)))
+	# rearange, ensure 'none' is the first in drs
+	if "none" in drs:
+		drs.remove("none")
+		drs.insert(0, "none")
+	# dimreducer as col, classifier as row
+	nrow, ncol = len(cfs), len(drs)
+	mean_mat = numpy.full((nrow, ncol), numpy.nan)
+	std_mat = numpy.full((nrow, ncol), numpy.nan)
+	for mdl, res in zip(models, all_res):
+		_mean, _std = _get_metric_mean_std(res, metric)
+		rid = cfs.index(mdl["classifier"])
+		cid = drs.index(mdl["dimreducer"])
+		mean_mat[rid, cid] = _mean
+		std_mat[rid, cid] = _std
+	return dict(dataset = dataset,
+		dimreducer_labels = drs,
+		classifier_labels = cfs,
+		mean_matrix = mean_mat,
+		std_matrix = std_mat)
+
+
+def save_txt(fp, mean_mat, std_mat, drs, cfs, delimiter = "\t"):
+	fp.write("\t".join([""] + ["%s\tstd" % i for i in drs]) + "\n")
+	for i, cf in enumerate(cfs):
+		fp.write("\t".join([cf] +\
+			["%.3f\t%.3f" % (mean_mat[i, j], std_mat[i, j])\
+				for j in range(len(drs))])\
+			+ "\n")
 	return
 
 
-def save_tableplot(fname, mean, stdev, title = ""):
-	assert mean.shape == stdev.shape
+def save_plot(fn, mean_mat, std_mat, drs, cfs, title = ""):
+	assert mean_mat.shape == std_mat.shape
 	# layout
-	nrow, ncol			= mean.shape
+	nrow, ncol			= mean_mat.shape
 	left_margin_inch	= 0.2
 	right_margin_inch	= 0.2
 	top_margin_inch		= 0.2
@@ -177,11 +185,11 @@ def save_tableplot(fname, mean, stdev, title = ""):
 				(1.0,	0.0,	0.0),
 			],
 		})
-	table = table_axes.pcolor(mean, cmap = cmap, vmin = 0.0, vmax = 1.0,
+	table = table_axes.pcolor(mean_mat, cmap = cmap, vmin = 0.0, vmax = 1.0,
 		alpha = table_patch_alpha)
 	# add text to cell
 	for r, c in itertools.product(range(nrow), range(ncol)):
-		_vmean, _vstd = mean[r, c], stdev[r, c]
+		_vmean, _vstd = mean_mat[r, c], std_mat[r, c]
 		text = "N/A" if numpy.isnan(_vmean) else ("%.3f (%.2f)" % (_vmean, _vstd))
 		# if blackground is dark, use white; else black
 		color = "#FFFFFF" if _vmean > 0.6 else "#000000"
@@ -192,15 +200,13 @@ def save_tableplot(fname, mean, stdev, title = ""):
 	# misc
 	# x labels
 	xticks = numpy.arange(ncol) + 0.5
-	xticklabels = [i["display_name"] for i in SUMMARIZE_DIMREDUC]
 	table_axes.set_xticks(xticks)
-	table_axes.set_xticklabels(xticklabels, color = "#000000", fontsize = 14,
+	table_axes.set_xticklabels(drs, color = "#000000", fontsize = 14,
 		horizontalalignment = "center", verticalalignment = "bottom")
 	# y labels
 	yticks = numpy.arange(nrow) + 0.5
-	yticklabels = [i["display_name"] for i in SUMMARIZE_CLASSIFIERS]
 	table_axes.set_yticks(yticks)
-	table_axes.set_yticklabels(yticklabels, color = "#000000", fontsize = 14,
+	table_axes.set_yticklabels(cfs, color = "#000000", fontsize = 14,
 		horizontalalignment = "right", verticalalignment = "center")
 	# axis limits
 	table_axes.set_xlim(0, ncol)
@@ -212,34 +218,34 @@ def save_tableplot(fname, mean, stdev, title = ""):
 		alpha = table_patch_alpha)
 	# misc
 	colorbar.outline.set_visible(False)
-	## yticks
-	#cmax_ymin, cmax_ymax = 128, 256
-	#cmax_yrange = cmax_ymax - cmax_ymin
-	#yticks = numpy.linspace(cmax_ymin, cmax_ymax, 5)
-	#yticklabels = ["%.1f" % ((i - cmax_ymin) / cmax_yrange) for i in yticks]
-	#cmax.set_ylim(cmax_ymin, cmax_ymax)
-	#cmax.set_yticks(yticks)
-	#cmax.set_yticklabels(yticklabels)
-	## misc
 	figure.suptitle(title, fontsize = 18,
 		horizontalalignment = "center", verticalalignment = "top")
-	matplotlib.pyplot.savefig(fname, dpi = 300)
+
+	# save
+	matplotlib.pyplot.savefig(fn, dpi = 300)
 	matplotlib.pyplot.close()
 	return
 
 
 def main():
 	args = get_args()
-	data = load_and_combine_results(args.input_prefix, args.metric)
-	# calculate mean and std
-	mean, std = compute_mean_stdev(data)
-	# output
-	os.makedirs(os.path.dirname(args.output_prefix), exist_ok = True)
-	#savetxt(args.output_prefix + ".tsv", mean, std, args.delimiter)
-	# plot
-	title = "%s, %s summary" % (args.input_prefix, args.metric)
-	fname = "%s.%s.summary.png" % (args.output_prefix, args.metric)
-	save_tableplot(fname, mean, std, title = title)
+	all_res = load_all_results(args.input)
+	# summarize results
+	sum_res = condense_results(all_res, args.metric)
+	# output table
+	with pylib.util.file_io.get_fh(args.output, "w") as fp:
+		save_txt(fp, delimiter = "\t",
+			drs = sum_res["dimreducer_labels"],
+			cfs = sum_res["classifier_labels"],
+			mean_mat = sum_res["mean_matrix"],
+			std_mat = sum_res["std_matrix"])
+	# output plot
+	if args.plot:
+		save_plot(args.plot, title = sum_res["dataset"],
+			drs = sum_res["dimreducer_labels"],
+			cfs = sum_res["classifier_labels"],
+			mean_mat = sum_res["mean_matrix"],
+			std_mat = sum_res["std_matrix"])
 	return
 
 

@@ -80,7 +80,7 @@ def main():
 	# run cv
 	cv.cross_validate(model, X = dataset.data, Y = dataset.label)
 	# output
-	out = dict(mode = "1-level",
+	out = dict(mode = "1-level", dataset = args.dataset,
 		labels = dataset.label_encoder.classes_.tolist(),
 		results = cv.get_cv_results())
 	with pylib.util.file_io.get_fh(args.output, "w") as fp:
