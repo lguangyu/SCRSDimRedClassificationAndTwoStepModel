@@ -9,6 +9,7 @@ import sklearn.naive_bayes
 import sklearn.svm
 # custom lib
 from . import base
+import pylib.util
 
 
 @base.ClassifierCollection.register("gnb", "gaussian_naive_bayesian")
@@ -57,7 +58,9 @@ class LinearSVM(sklearn.svm.LinearSVC, base.ClassifierAbstract):
 @base.ClassifierCollection.register("svm_rbf", "rbf_kernel_svm")
 @base.ClassifierAbstract.serialize_init(as_name = "svm_rbf",
 	params = ["gamma"])
-class RBFKernelSVM(sklearn.svm.SVC, base.ClassifierAbstract):
+class RBFKernelSVM(sklearn.svm.SVC,
+		pylib.util.kernel_routines.RBFKernelRoutinesMixin,
+		base.ClassifierAbstract):
 	"""
 	kernel support vector machine using rbf (gaussian) kernel; default scaling
 	parameter is calculated as sigma = <median euclidean distances>, if
@@ -69,19 +72,9 @@ class RBFKernelSVM(sklearn.svm.SVC, base.ClassifierAbstract):
 		super(RBFKernelSVM, self).__init__(kernel = "rbf", **kw)
 		return
 
-	@staticmethod
-	def rbf_default_gamma(X):
-		"""
-		return the gamma calculated with median of pairwise euclidean distances
-		"""
-		euc = sklearn.metrics.pairwise_distances(X, metric = "euclidean")
-		sigma = numpy.median(euc)
-		gamma = 0.5 / (sigma ** 2)
-		return gamma
-
 	def fit(self, X, Y, *ka, use_default_gamma = True, **kw):
 		if use_default_gamma:
 			# calculate gamma if not provided, by default the median of pairwise
 			# euclidean distances
-			self.set_params(gamma = self.rbf_default_gamma(X))
+			self.set_params(gamma = self.rbf_gamma_by_median(X))
 		return super(RBFKernelSVM, self).fit(X, Y, *ka, **kw)

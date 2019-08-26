@@ -30,7 +30,7 @@ class RBFKernelSVM_CV(cv_parameter_selector._CVClassifParamSelectMixin,
 	the scaling parameter gamma;
 	"""
 	def fit(self, X, Y, *ka, **kw):
-		_log_ser = numpy.power(10, numpy.arange(11) - 5.0)
-		pars = dict(C = _log_ser, gamma = _log_ser * self.rbf_default_gamma(X))
+		_logsp = numpy.power(10, numpy.arange(11) - 5.0)
+		pars = dict(C = _logsp, gamma = _logsp * self.rbf_gamma_by_median(X))
 		return super(RBFKernelSVM_CV, self).fit(X, Y, *ka,
 			use_default_gamma = False, cv_params = pars, **kw)

@@ -3,6 +3,7 @@
 # misc but helpful
 from . import arg_parsing
 from . import file_io
+from . import kernel_routines
 # model cleection
 from . import collection_registry
 from . import model_collection
