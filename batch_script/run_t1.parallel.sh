@@ -9,7 +9,7 @@ for dataset in {exponential,platform-1,platform-2}; do
 			sbatch -J $job_desc \
 				-o ".log/"$job_desc".log" \
 				-e ".log/"$job_desc".err" \
-				-p general -N1 -c8 --mem 4G \
+				-p general -N1 -c1 --mem 2G \
 				--wrap \
 "# run experiments #
 echo \$SLURM_JOB_ID >&2
