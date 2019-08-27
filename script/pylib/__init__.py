@@ -11,3 +11,5 @@ from . import model_structures
 # datasets, DatasetCollection is the main interface
 from . import dataset
 from .dataset import DatasetCollection
+# parsing results, useful in results summary scripts
+from . import result_parsing

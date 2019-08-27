@@ -1,90 +1,113 @@
 #!/usr/bin/env python3
 
-import sys
-import os
-import numpy
+import argparse
+#import collections
+import glob
+#import itertools
+import json
 import matplotlib
 import matplotlib.lines
 import matplotlib.pyplot
-import argparse
-
-
-DIMSTEST_DATASETS = [
-	"COMBINED.phase",
-	"COMBINED.strain",
-	"EXPONENT1-50",
-	"PLATFORM1-50",
-	"PLATFORM2-50",
-]
-
-DIMSTEST_CLASSIFIERS = [
-	dict(id = "gnb", display_name = "GNB"),
-	dict(id = "lr", display_name = "LR"),
-	dict(id = "lda", display_name = "LDA"),
-	dict(id = "svm_lin", display_name = "Linear SVM"),
-	dict(id = "svm_rbf", display_name = "RBF SVM"),
-]
-
-DIMSTEST_DIMREDUC = [
-	dict(id = "pca",		display_name = "PCA"),
-	dict(id = "lda",		display_name = "LDA"),
-	dict(id = "lsdr",	display_name = "LSDR"),
-]
-
-DIMSTEST_DIMS = numpy.arange(30) + 1
+import numpy
+import sys
+# custom lib
+import pylib
 
 
 def get_args():
 	ap = argparse.ArgumentParser()
-	ap.add_argument("input_dir", type = str,
-		help = "input directory")
-	ap.add_argument("-o", "--output-dir", type = str,
-		metavar = "dir", default = "./image",
-		help = "output directory (default: ./image)")
+	ap.add_argument("input", nargs = "+",
+		help = "input dimension reduction scan results, wildcard accepted")
+	ap.add_argument("-o", "--output", type = str, default = "-",
+		metavar = "json",
+		help = "write summary to this json file instead of stdout")
+	ap.add_argument("-m", "--metric", type = str,
+		metavar = "str", default = "average_accuracy",
+		help = "metric of model evaluation (default: average_accuracy)")
+	ap.add_argument("-p", "--plot", type = str,
+		metavar = "png",
+		help = "also draw a plot (default: off)")
 	args = ap.parse_args()
+	# refine args
+	if args.output == "-":
+		args.output = sys.stdout
 	return args
 
 
-def load_data_from_log(fname):
-	with open(fname, "r") as fh:
-		lines = fh.read().splitlines()
-		n_lines = len(lines)
-	block_size = 27
-	res = []
-	for block in even_chunks(lines, block_size):
-		res.append(parse_block(block))
-	train, test = _transform_dicts(res)
-	return train, test
-
-
-def even_chunks(iterable, size):
-	for i in range(0, len(iterable), size):
-		yield iterable[i:i + size]
-
-
-def parse_block(lines):
-	if len(lines) != 27:
-		raise RuntimeError("corrupted block")
-	ret = dict(train = [], test = [])
-	for l in lines[-20:]:
-		s = l.split(" ")
-		v = float(s[-1])
-		if s[0] == "training":
-			ret["train"].append(v)
-		elif s[0] == "test":
-			ret["test"].append(v)
-		else:
-			raise RuntimeError("corrupted block")
+def load_all_results(inputs) -> list:
+	assert isinstance(inputs, list)
+	ret = list()
+	for i in inputs:
+		for f in glob.glob(i):
+			with open(f, "r") as fp:
+				ret.append(json.load(fp))
 	return ret
 
 
-def _transform_dicts(_list):
-	# _list[#1-30]{"train","test"}
-	train = list(map(lambda i: i["train"], _list))
-	train = numpy.asarray(train, dtype = float)
-	test = list(map(lambda i: i["test"], _list))
-	test = numpy.asarray(test, dtype = float)
-	return train, test
+class OrganizedResultDict(dict):
+	def add_result(self, res):
+		if not isinstance(res, pylib.result_parsing.SingleLevelJSONCondenser):
+			raise TypeError("res must be SingleLevelJSONCondenser, not '%s'"\
+				% type(res).__name__)
+		self._update_nested_dict(
+			# keys to descend
+			res.dataset,
+			res.dimreducer,
+			res.classifier,
+			"traininig",
+			res.n_components,
+			value = res.train_mean)
+		self._update_nested_dict(
+			# keys to descend
+			res.dataset,
+			res.dimreducer,
+			res.classifier,
+			"testing",
+			res.n_components,
+			value = res.test_mean)
+		return
+
+	def _update_nested_dict(self, *keys, value):
+		if not keys:
+			raise ValueError("keys cannot be empty")
+		d = self
+		keys = list(keys)
+		keys.reverse()
+		while keys:
+			# descend into nested dict structure by a list of keys
+			k = keys.pop()
+			if keys: # if remaining keys after popping, descend
+				# i.e. k is not the last key
+				d = d.setdefault(k, dict())
+			else:
+				# if k is the last key, update
+				d[k] = value
+		return
+
+
+def organize_results(results, metric) -> dict:
+	_ds = set() # datasets
+	_dr = set() # dimreducers
+	_cf = set() # classifiers
+	# res_dict is in root[dataset][dimred][classif][train/test][n_cmpnt] order
+	res_dict = OrganizedResultDict()
+	for i in results:
+		res = pylib.result_parsing.SingleLevelJSONCondenser.parse(i, metric)
+		_ds.add(res.dataset)
+		_dr.add(res.dimreducer)
+		_cf.add(res.classifier)
+		res_dict.add_result(res)
+	# 'none' should always the first of drs
+	if "none" in _dr:
+		_dr.remove("none")
+		sorted_dr = ["none"] + sorted(_dr)
+	return dict(datasets = sorted(_ds), dimreducers = sorted_dr,
+		classifiers = sorted(_cf), results = res_dict)
+
+
+# TODO: finish the plots
+class Plot(object):
+	pass
 
 
 def plot_log(axes, log_file):
@@ -166,9 +189,18 @@ def plot_all(dataset_res_dir, png):
 	matplotlib.pyplot.close()
 
 
-if __name__ == "__main__":
+
+
+
+
+def main():
 	args = get_args()
-	for dataset in DIMSTEST_DATASETS:
-		res_dir = os.path.join(args.input_dir, dataset)
-		png = os.path.join(args.output_dir, "%s.dims_test.png" % dataset)
-		plot_all(res_dir, png)
+	results = organize_results(load_all_results(args.input), args.metric)
+	# output
+	with pylib.util.file_io.get_fh(args.output, "w") as fp:
+		json.dump(results, fp)
+	return
+
+
+if __name__ == "__main__":
+	main()

@@ -9,7 +9,6 @@ import matplotlib.cm
 import matplotlib.colors
 import matplotlib.pyplot
 import numpy
-import os
 import sys
 # custom lib
 import pylib
@@ -45,45 +44,15 @@ def load_all_results(inputs) -> list:
 	return ret
 
 
-def _as_unique(query_func, sequential):
-	assert set([1]).pop() == 1 # check set.pop() returns a value
-	vals = set(map(query_func, sequential))
-	if len(vals) != 1: # if unique, it should only contain one element
-		raise ValueError("expected unique, got %d value(s): %s"\
-			% (len(vals), str(vals)))
-	return vals.pop()
-
-
-def _get_model_info(res):
-	assert isinstance(res, dict), type(res)
-	cvs = res["results"]
-	dr = _as_unique(lambda x: x["dimreducer"]["model"], cvs)
-	cf = _as_unique(lambda x: x["classifier"]["model"], cvs)
-	nd = None
-	try:
-		_nd_query = lambda x: x["dimreducer"]["params"]["n_components"]
-		nd = _as_unique(_nd_query, cvs)
-	except (KeyError, TypeError):
-		pass
-	return dict(dimreducer = dr, n_components = nd, classifier = cf)
-
-
-def _get_metric_mean_std(res, metric):
-	_ev_query = lambda x: x["evaluation"]["testing"][metric]
-	vals = list(map(_ev_query, res["results"]))
-	_mean = numpy.mean(vals)
-	_std = numpy.std(vals)
-	return _mean, _std
-
-
 def condense_results(all_res, metric):
 	assert isinstance(all_res, list), type(all_res)
 	# dataset info
-	dataset = _as_unique(lambda x: x["dataset"], all_res)
-	models = [_get_model_info(i) for i in all_res]
+	dataset = pylib.result_parsing.as_unique(lambda x: x["dataset"], all_res)
+	models = [pylib.result_parsing.SingleLevelJSONCondenser.parse(i, metric)\
+		for i in all_res]
 	# combine models
-	drs = sorted(set(map(lambda x: x["dimreducer"], models)))
-	cfs = sorted(set(map(lambda x: x["classifier"], models)))
+	drs = sorted(set(map(lambda x: x.dimreducer, models)))
+	cfs = sorted(set(map(lambda x: x.classifier, models)))
 	# rearange, ensure 'none' is the first in drs
 	if "none" in drs:
 		drs.remove("none")
@@ -93,11 +62,10 @@ def condense_results(all_res, metric):
 	mean_mat = numpy.full((nrow, ncol), numpy.nan)
 	std_mat = numpy.full((nrow, ncol), numpy.nan)
 	for mdl, res in zip(models, all_res):
-		_mean, _std = _get_metric_mean_std(res, metric)
-		rid = cfs.index(mdl["classifier"])
-		cid = drs.index(mdl["dimreducer"])
-		mean_mat[rid, cid] = _mean
-		std_mat[rid, cid] = _std
+		rid = cfs.index(mdl.classifier)
+		cid = drs.index(mdl.dimreducer)
+		mean_mat[rid, cid]	= mdl.test_mean
+		std_mat[rid, cid]	= mdl.test_std
 	return dict(dataset = dataset,
 		dimreducer_labels = drs,
 		classifier_labels = cfs,
