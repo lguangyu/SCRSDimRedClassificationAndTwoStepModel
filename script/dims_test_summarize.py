@@ -451,7 +451,7 @@ class DimsTestPilePlotter(object):
 			ncol = 2, fontsize = 18, frameon = False)
 
 		# save
-		matplotlib.pyplot.savefig(fname, dpi = 100)
+		matplotlib.pyplot.savefig(fname, dpi = 300)
 		matplotlib.pyplot.close()
 		return
 
