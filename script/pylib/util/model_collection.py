@@ -37,9 +37,9 @@ class ModelCollection(collection_registry.CollectionRegistryBase):
 		return cls.query(key)(*ka, **kw)
 
 	@classmethod
-	def from_serialzed(cls, serial):
+	def from_serialized(cls, serial):
 		"""
 		re-create a model using serialized data; similar to actual inverse of
 		model.serialize();
 		"""
-		return cls.query(serial["model"]).deserialze(serial)
+		return cls.query(serial["model"]).deserialize(serial)

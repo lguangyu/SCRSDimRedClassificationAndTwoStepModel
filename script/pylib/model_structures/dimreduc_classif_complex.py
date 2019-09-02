@@ -35,7 +35,7 @@ class DimredClassifComplex(pylib.evaluator.ModelEvaluationResultsMixin,
 		"""
 		if ((self.__dr is None) or force_create):
 			self.__dr = pylib.dimreducers_collection.DimReducerCollection\
-				.from_serialzed(self.dimreducer_props)
+				.from_serialized(self.dimreducer_props)
 			self.reset_eval_results("all")
 			# model maybe huge, always force gc after new creation
 			# this collects the old model if it is unreachable
@@ -50,7 +50,7 @@ class DimredClassifComplex(pylib.evaluator.ModelEvaluationResultsMixin,
 		"""
 		if ((self.__cf is None) or force_create):
 			self.__cf = pylib.classifiers_collection.ClassifierCollection\
-				.from_serialzed(self.classifier_props)
+				.from_serialized(self.classifier_props)
 			self.reset_eval_results("all")
 			# model maybe huge, always force gc after new creation
 			# this collects the old model if it is unreachable
@@ -106,7 +106,7 @@ class DimredClassifComplex(pylib.evaluator.ModelEvaluationResultsMixin,
 		return ret
 
 	############################################################################
-	# .serialize() and .deserialze() are protocol of SerializerAbstract
+	# .serialize() and .deserialize() are protocol of SerializerAbstract
 	def serialize(self):
 		ret = dict(evaluation = self.get_eval_results("all"),
 			dimreducer = self.get_dimreducer().serialize(),
@@ -114,8 +114,8 @@ class DimredClassifComplex(pylib.evaluator.ModelEvaluationResultsMixin,
 		return ret
 
 	@classmethod
-	def deserialze(cls, ds):
-		# evaluation will not be deserialzed
+	def deserialize(cls, ds):
+		# evaluation will not be deserialized
 		new = cls(dimreducer_props = ds["dimreducer"],
 			classifier_props = ds["classifier"])
 		return new

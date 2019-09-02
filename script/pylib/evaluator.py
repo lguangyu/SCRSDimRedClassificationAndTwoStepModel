@@ -53,7 +53,7 @@ class ClassifEvaluator(dict, pylib.util.serializer.SerializerAbstract):
 		return self
 
 	@classmethod
-	def deserialze(cls, ds):
+	def deserialize(cls, ds):
 		return cls(ds)
 
 

@@ -19,14 +19,14 @@ class ModelSerializerBase(serializer.SerializerAbstract):
 		'params': a dict of {param_name : param_value}; if _serialize_params_
 			is None, params is None;
 
-	.deserialze(): return a re-constructed object;
+	.deserialize(): return a re-constructed object;
 	"""
 	@staticmethod
 	def serialize_init(as_name: str, params: set or list = None) -> "decorator":
 		"""
 		decorator factory to setup the information for serialization; correct
 		settings of these parameters will be required (and checked) by either
-		.serialize() or .deserialze() methods;
+		.serialize() or .deserialize() methods;
 		parent class's _serialize_params_ list will be copied to subclass;
 		"""
 		# check parameters
@@ -78,11 +78,11 @@ class ModelSerializerBase(serializer.SerializerAbstract):
 		return ret
 
 	@classmethod
-	def deserialze(cls, ds):
+	def deserialize(cls, ds):
 		cls._check_serialize_settings()
 		# restrict to be exact match, subclass not allowed
 		if cls._serialize_as_ != ds["model"]:
-			raise TypeError("cannot deserialze model '%s' as '%s'"\
+			raise TypeError("cannot deserialize model '%s' as '%s'"\
 				% (ds["model"], cls._serialize_as_))
 		new = cls(**(dict() if ds["params"] is None else ds["params"]))
 		return new

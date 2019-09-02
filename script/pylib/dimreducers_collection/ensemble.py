@@ -103,7 +103,7 @@ class LSDR_KPCA_Ensemble(base.DimReducerAbstract):
 		return ret
 
 	@classmethod
-	def deserialze(cls, ds):
+	def deserialize(cls, ds):
 		# we don't need estimators info here
 		stripped = {k: v for k, v in ds.items() if k != "estimators"}
-		return super(LSDR_KPCA_Ensemble, cls).deserialze(stripped)
+		return super(LSDR_KPCA_Ensemble, cls).deserialize(stripped)

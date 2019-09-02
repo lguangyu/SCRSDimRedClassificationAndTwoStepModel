@@ -15,14 +15,14 @@ class SerializerAbstract(abc.ABC):
 	@abc.abstractmethod
 	def serialize(self):
 		"""
-		interface to serialze self to built-in data structures; inverse to
-		cls.deserialze()
+		interface to serialize self to built-in data structures; inverse to
+		cls.deserialize()
 		"""
 		pass
 
 	@classmethod
 	@abc.abstractmethod
-	def deserialze(cls, ds):
+	def deserialize(cls, ds):
 		"""
 		interface to create a new instance of cls from serialized data; inverse
 		to .serialize()
@@ -41,7 +41,7 @@ class SerializerJSONEncoder(json.JSONEncoder):
 	class Foo(SerializerAbstract):
 		def serialize(...):
 			...
-		def invert_serialze(...):
+		def invert_serialize(...):
 			...
 
 	# a foo instance now fulfills the SerializerAbstract protocol, it can be
