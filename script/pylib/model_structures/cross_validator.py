@@ -44,7 +44,8 @@ class CrossValidator(object):
 		self.reset_cv_results() # remove old results
 		cv = self.cv_driver(**self.cv_props)
 		for train, test in cv.split(X, Y):
-			model.fit(X[train], Y[train])
+			# use force_create = True will maximize the resource release
+			model.fit(X[train], Y[train], force_create = True)
 			model.predict(X[test], Y[test])
 			self.add_cv_results(model.serialize())
 		return self

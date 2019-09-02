@@ -26,10 +26,10 @@ from DimGrowth import *
 from grassman import *
 import time 
 
-np.set_printoptions(precision=4)
-np.set_printoptions(threshold=sys.maxsize)
-np.set_printoptions(linewidth=300)
-np.set_printoptions(suppress=True)
+#np.set_printoptions(precision=4)
+#np.set_printoptions(threshold=sys.maxsize)
+#np.set_printoptions(linewidth=300)
+#np.set_printoptions(suppress=True)
 
 
 class hsic_algorithms(hsic_parent):

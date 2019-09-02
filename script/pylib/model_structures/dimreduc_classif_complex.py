@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import functools
+import gc
 # custom lib
 from . import base
 import pylib.classifiers_collection
@@ -36,6 +37,9 @@ class DimredClassifComplex(pylib.evaluator.ModelEvaluationResultsMixin,
 			self.__dr = pylib.dimreducers_collection.DimReducerCollection\
 				.from_serialzed(self.dimreducer_props)
 			self.reset_eval_results("all")
+			# model maybe huge, always force gc after new creation
+			# this collects the old model if it is unreachable
+			gc.collect()
 		return self.__dr
 
 	def get_classifier(self, *, force_create = False):
@@ -48,6 +52,9 @@ class DimredClassifComplex(pylib.evaluator.ModelEvaluationResultsMixin,
 			self.__cf = pylib.classifiers_collection.ClassifierCollection\
 				.from_serialzed(self.classifier_props)
 			self.reset_eval_results("all")
+			# model maybe huge, always force gc after new creation
+			# this collects the old model if it is unreachable
+			gc.collect()
 		return self.__cf
 
 	############################################################################
@@ -78,7 +85,7 @@ class DimredClassifComplex(pylib.evaluator.ModelEvaluationResultsMixin,
 		self.reset_eval_results("testing")
 		return self
 
-	def predict(self, X, Y = None, *, force_create = False):
+	def predict(self, X, Y = None):
 		"""
 		predict the classified labels using trained model; the input X will be
 		first transformed (reduced dimensionality) by dimreducer before passed
@@ -88,8 +95,8 @@ class DimredClassifComplex(pylib.evaluator.ModelEvaluationResultsMixin,
 		X: follows .predict() convention;
 		Y: if provided, consider as true labels and performs model evaluation;
 		"""
-		dr = self.get_dimreducer(force_create = force_create)
-		cf = self.get_classifier(force_create = force_create)
+		dr = self.get_dimreducer(force_create = False)
+		cf = self.get_classifier(force_create = False)
 		tr_x = dr.transform(X)
 		ret = cf.predict(tr_x)
 		# if provided Y, calculate testing accuracy, etc.
