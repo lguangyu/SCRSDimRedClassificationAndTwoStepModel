@@ -2,9 +2,7 @@
 
 mkdir -p .log # ouput log directory
 
-#for dataset in {exponential,platform-1,platform-2}; do
-#for dataset in {platform-1,platform-2}; do
-dataset="platform-2"
+for dataset in {exponential,platform-1,platform-2}; do
 	for dr in {none,lda,lsdr,pca}; do
 		for cls in {gnb,lda,lr,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv}; do
 			for nd in $(seq 2 40); do 
@@ -12,7 +10,7 @@ dataset="platform-2"
 				sbatch -J $job_desc \
 					-o ".log/"$job_desc".log" \
 					-e ".log/"$job_desc".err" \
-					-p general -N1 -c1 --mem 2G \
+					-p general -N1 -c1 --mem 4G \
 					--wrap \
 "# run experiments #
 echo \$SLURM_JOB_ID >&2
@@ -32,4 +30,4 @@ deactivate"
 			done
 		done
 	done
-#done
+done
