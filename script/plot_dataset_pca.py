@@ -59,7 +59,7 @@ def _setup_layout(n_classes) -> dict:
 	# dimensions of pca plot
 	eig_pca_axes_gap_inch	= 0.5
 	pca_legend_width_inch	= 1.5
-	pca_legend_gap_inch		= 0.2
+	pca_legend_gap_inch		= 0.1
 	pca_axes_width_inch		= eig_axes_width_inch - pca_legend_width_inch\
 		- pca_legend_gap_inch # align to eigenvalue axes
 	pca_axes_height_inch	= pca_axes_width_inch
@@ -69,8 +69,7 @@ def _setup_layout(n_classes) -> dict:
 	# more calculations on pca legend
 	# these coords are using to pca_axes.transAxes
 	pca_legend_left		= pca_legend_gap_inch / pca_axes_width_inch + 1.0
-	pca_legend_right	= pca_legend_left\
-		+ pca_legend_width_inch / pca_axes_width_inch
+	pca_legend_width	= pca_legend_width_inch / pca_axes_width_inch
 	# dimensions of figure
 	figure_width_inch		= left_margin_inch + class_axes_grid_width_inch\
 		+ right_margin_inch
@@ -117,7 +116,7 @@ def _setup_layout(n_classes) -> dict:
 		"pca_axes": pca_axes,
 		"pca_legend": {
 			"left": pca_legend_left,
-			"right": pca_legend_right,
+			"width": pca_legend_width,
 		},
 		"eig_axes": eig_axes,
 		"class_axes_list": class_axes_list,
@@ -159,12 +158,14 @@ def plot_dataset_pca(plot_file, dataset, n_components = 100):
 		mask = (dataset.text_label == label)
 		handles.append(axes.scatter(pc_x[mask], pc_y[mask],
 			marker = "o", s = 25, facecolor = "#FFFFFF40", edgecolor = color,
-			label = label))
+			zorder = 2, label = label))
 	# pca plot misc
 	axes.set_xlabel("PC1: %.1f%%" % (eigvals[0] * 100))
 	axes.set_ylabel("PC2: %.1f%%" % (eigvals[1] * 100))
 	axes.legend(handles = handles,
-		bbox_to_anchor = [layout["pca_legend"]["left"], -0.01, 0.1, 1.02])
+		bbox_to_anchor = [layout["pca_legend"]["left"], -0.01,
+			layout["pca_legend"]["width"], 1.02] # -0.01 -> 1.01 in transAxis
+	)
 
 	# eigenvalue plot
 	# style axes
@@ -194,7 +195,7 @@ def plot_dataset_pca(plot_file, dataset, n_components = 100):
 			right = False, labelbottom = False, labeltop = False,
 			labelleft = False, labelright = False)
 		# highlight this class with colorized
-		hl_color = "#3CC26B" # highlighed class
+		hl_color = "#DB4E27" # highlighed class
 		rs_color = "#9DA6C2" # everything else
 		mask = (dataset.text_label == label)
 		axes.scatter(pc_x[mask], pc_y[mask],
@@ -204,7 +205,9 @@ def plot_dataset_pca(plot_file, dataset, n_components = 100):
 		axes.scatter(pc_x[reverse_mask], pc_y[reverse_mask],
 			s = 15, facecolor = rs_color, edgecolor = rs_color, zorder = 4)
 		# misc
-		axes.set_xlabel(label, fontsize = 8)
+		axes.text(x = 0.95, y = 0.95, s = label,
+			fontsize = 10, transform = axes.transAxes, zorder = 6,
+			horizontalalignment = "right", verticalalignment = "top")
 
 	# save figure
 	matplotlib.pyplot.savefig(plot_file, dpi = 300)
