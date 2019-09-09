@@ -1,3 +1,3 @@
 [submodule "lsdr"]
-	path = lsdr
+	path = script/pylib/lsdr
 	url = https://github.com/chieh-neu/ISM_supervised_DR

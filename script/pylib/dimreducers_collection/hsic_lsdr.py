@@ -5,8 +5,7 @@ import sys
 # custom lib
 from . import base
 # interface to HSIC package
-sys.path.append("./lsdr")
-import sdr as lsdr_lib
+import pylib.lsdr
 
 
 @base.DimReducerCollection.register("lsdr", "hsic_lsdr")
@@ -29,7 +28,7 @@ class HSIC_LSDR(base.DimReducerAbstract):
 		return
 
 	def fit(self, X, Y):
-		self._sdr = lsdr_lib.sdr(X, Y, self.n_components)
+		self._sdr = pylib.lsdr.sdr.sdr(X, Y, self.n_components)
 		self._sdr.train()
 		return self
 
