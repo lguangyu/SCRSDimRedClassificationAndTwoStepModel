@@ -31,7 +31,6 @@ def get_args():
 
 
 def _setup_layout(n_classes) -> dict:
-	ret = dict()
 	# margins
 	left_margin_inch	= 0.2
 	right_margin_inch	= 0.2
@@ -111,7 +110,7 @@ def _setup_layout(n_classes) -> dict:
 	])
 
 	# return dict
-	return {
+	ret = {
 		"figure": figure,
 		"pca_axes": pca_axes,
 		"pca_legend": {
@@ -121,6 +120,7 @@ def _setup_layout(n_classes) -> dict:
 		"eig_axes": eig_axes,
 		"class_axes_list": class_axes_list,
 	}
+	return ret
 
 
 
@@ -211,6 +211,7 @@ def plot_dataset_pca(plot_file, dataset, n_components = 100):
 
 	# save figure
 	matplotlib.pyplot.savefig(plot_file, dpi = 300)
+	matplotlib.pyplot.close()
 	return
 
 
@@ -225,13 +226,3 @@ def main():
 
 if __name__ == "__main__":
 	main()
-	#args = get_args()
-	#data, labels = load_data(args.data, args.meta)
-	##
-	#fig = pyplot.figure(figsize = (10, 18))
-
-	#plot_pca(fig, data, labels)
-	##pyplot.show()
-	#output = "image/" + os.path.basename(args.data) + ".pca.png"
-	#pyplot.savefig(output)
-	#pyplot.close()
