@@ -67,7 +67,7 @@ def _setup_layout(n_datasets) -> dict:
 
 	# create subplots
 	axes_list = figure.subplots(nrows = n_datasets, sharex = True, sharey = True,
-		gridspec_kw = dict(
+		squeeze = False, gridspec_kw = dict(
 			left	= axes_grid_left_inch / figure_width_inch,
 			bottom	= axes_grid_bottom_inch / figure_height_inch,
 			right	= (axes_grid_left_inch + axes_grid_width_inch)\
@@ -81,7 +81,7 @@ def _setup_layout(n_datasets) -> dict:
 	# return dict
 	ret = {
 		"figure": figure,
-		"axes_list": axes_list,
+		"axes_list": axes_list.squeeze(axis = 1),
 		"total_text_topright": {
 			"x": 1.0 + total_text_offsetx_inch / axes_width_inch,
 			"y": 1.0 + total_text_offsety_inch / axes_height_inch,
