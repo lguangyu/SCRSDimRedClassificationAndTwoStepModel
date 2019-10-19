@@ -3,7 +3,7 @@
 mkdir -p .log # ouput log directory
 
 for dataset in {exponential,platform-1,platform-2}; do
-	for dr in {none,kpca,lda,lsdr,pca}; do
+	for dr in {none,kpca,lda,lsdr,pca,sup_pca}; do
 		for cls in {gnb,lda,lr,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv}; do
 			job_desc="$dataset.$dr.$cls"
 			sbatch -J $job_desc \
