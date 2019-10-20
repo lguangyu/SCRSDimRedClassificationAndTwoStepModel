@@ -124,12 +124,12 @@ class ExponentialPhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "EXPONENTIAL"
 
 
-@DatasetCollection.register("platform-1")
+@DatasetCollection.register("platform-1", "stationary-1")
 class Platform1PhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "PLATFORM1"
 
 
-@DatasetCollection.register("platform-2")
+@DatasetCollection.register("platform-2", "stationary-2")
 class Platform2PhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "PLATFORM2"
 
