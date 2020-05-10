@@ -2,6 +2,7 @@
 archive/
 data/
 raw/
+remote/
 #batch_script/
 
 # intermediate results
