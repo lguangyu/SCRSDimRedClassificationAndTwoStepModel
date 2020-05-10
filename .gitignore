@@ -25,6 +25,7 @@ develop/
 *.swp
 .DS_Store
 .Rhistory
+.log/
 tmp/
 
 

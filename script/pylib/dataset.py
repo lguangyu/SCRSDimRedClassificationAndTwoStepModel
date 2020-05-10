@@ -32,8 +32,8 @@ class DatasetBase(object):
 	"""
 	############################################################################
 	# maybe overridden to read from other files
-	_raw_data_file_		= "./data/oxford.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/oxford.labels.txt"
+	_raw_data_file_		= "./data/oxford_28.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/oxford_28.labels.txt"
 
 	############################################################################
 	# routines of preprocessing raw dataset into specific dataset
@@ -186,27 +186,27 @@ class DuoLabelDataset(DatasetBase):
 # zijian datasets
 @DatasetCollection.register("zijian-exponential")
 class ExponentialPhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= "./data/zijian.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian.labels.txt"
+	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian_40.labels.txt"
 	_extract_phase_ = "Exponential"
 
 
 @DatasetCollection.register("zijian-stationary-1")
 class Platform1PhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= "./data/zijian.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian.labels.txt"
+	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian_40.labels.txt"
 	_extract_phase_ = "Stationary1"
 
 
 @DatasetCollection.register("zijian-stationary-2")
 class Platform1PhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= "./data/zijian.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian.labels.txt"
+	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian_40.labels.txt"
 	_extract_phase_ = "Stationary2"
 
 
 @DatasetCollection.register("zijian-stationary-3")
 class Platform1PhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= "./data/zijian.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian.labels.txt"
+	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian_40.labels.txt"
 	_extract_phase_ = "Stationary3"
