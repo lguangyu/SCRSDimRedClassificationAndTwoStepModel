@@ -32,8 +32,8 @@ class DatasetBase(object):
 	"""
 	############################################################################
 	# maybe overridden to read from other files
-	_raw_data_file_		= "./data/ALL.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/ALL.label.txt"
+	_raw_data_file_		= "./data/oxford.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/oxford.labels.txt"
 
 	############################################################################
 	# routines of preprocessing raw dataset into specific dataset
@@ -119,22 +119,24 @@ class PhaseDatasetBase(SingleLabelDataset):
 		return
 
 
-@DatasetCollection.register("exponential")
+################################################################################
+# oxford datasets
+@DatasetCollection.register("oxford-exponential")
 class ExponentialPhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "EXPONENTIAL"
 
 
-@DatasetCollection.register("platform-1", "stationary-1")
+@DatasetCollection.register("oxford-platform-1", "oxford-stationary-1")
 class Platform1PhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "PLATFORM1"
 
 
-@DatasetCollection.register("platform-2", "stationary-2")
+@DatasetCollection.register("oxford-platform-2", "oxford-stationary-2")
 class Platform2PhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "PLATFORM2"
 
 
-@DatasetCollection.register("strain-only")
+@DatasetCollection.register("oxford-strain-only")
 class StrainLabelDataset(SingleLabelDataset):
 	def __init__(self, *ka, **kw):
 		super(StrainLabelDataset, self).__init__(*ka, **kw)
@@ -144,7 +146,7 @@ class StrainLabelDataset(SingleLabelDataset):
 		return
 
 
-@DatasetCollection.register("phase-only")
+@DatasetCollection.register("oxford-phase-only")
 class PhaseLabelDataset(SingleLabelDataset):
 	def __init__(self, *ka, **kw):
 		super(PhaseLabelDataset, self).__init__(*ka, **kw)
@@ -154,7 +156,7 @@ class PhaseLabelDataset(SingleLabelDataset):
 		return
 
 
-@DatasetCollection.register("phase-and-strain", "duo-label")
+@DatasetCollection.register("oxford-phase-and-strain", "oxford-duo-label")
 class DuoLabelDataset(DatasetBase):
 	"""
 	datasets use both phase and strain labels;
@@ -178,3 +180,33 @@ class DuoLabelDataset(DatasetBase):
 		self.strain_label_encoder, self.strain_label\
 			= self.pp_encode_label(self.strain_text_label)
 		return
+
+
+################################################################################
+# zijian datasets
+@DatasetCollection.register("zijian-exponential")
+class ExponentialPhaseDataset(PhaseDatasetBase):
+	_raw_data_file_		= "./data/zijian.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian.labels.txt"
+	_extract_phase_ = "Exponential"
+
+
+@DatasetCollection.register("zijian-stationary-1")
+class Platform1PhaseDataset(PhaseDatasetBase):
+	_raw_data_file_		= "./data/zijian.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian.labels.txt"
+	_extract_phase_ = "Stationary1"
+
+
+@DatasetCollection.register("zijian-stationary-2")
+class Platform1PhaseDataset(PhaseDatasetBase):
+	_raw_data_file_		= "./data/zijian.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian.labels.txt"
+	_extract_phase_ = "Stationary2"
+
+
+@DatasetCollection.register("zijian-stationary-3")
+class Platform1PhaseDataset(PhaseDatasetBase):
+	_raw_data_file_		= "./data/zijian.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian.labels.txt"
+	_extract_phase_ = "Stationary3"
