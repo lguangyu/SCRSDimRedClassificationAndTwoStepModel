@@ -20,7 +20,7 @@ def get_args():
 		help = "write output to this file instead of stdout")
 
 	# model parameters
-	gp = ap.add_argument_group(description = "model parameters")
+	gp = ap.add_argument_group("model options")
 	gp.add_argument("-R", "--dimreducer", type = str, required = True,
 		metavar = "model",
 		choices = pylib.DimReducerCollection.get_registered_keys(),
@@ -39,7 +39,7 @@ def get_args():
 			+ "; **some entries may have multiple aliases")
 
 	# cross validation parameters
-	gp = ap.add_argument_group(description = "cross-validation parameters")
+	gp = ap.add_argument_group("cross-validation options")
 	gp.add_argument("-f", "--cv-folds", type = int,
 		metavar = "int", default = 10,
 		help = "n-fold cross validation, must be at least 2 (default: 10)")
@@ -61,12 +61,13 @@ def get_args():
 
 def main():
 	args = get_args()
-	# create dataset
-	dataset = pylib.DatasetCollection.get_dataset(args.dataset)
-	if not isinstance(dataset, pylib.dataset.SingleLabelDataset):
-		raise ValueError("dataset used in this (1-level) model must be "
-			"SingleLabelDataset, but the specified '%s' is not"\
+	# check and create dataset
+	if not pylib.DatasetCollection.check_query_subclass(args.dataset,
+		exp_cls = pylib.dataset.SingleLabelDatasetBase):
+		raise RuntimeError("dataset used by 1-level method must be "
+			"single-labelled (only strain or phase), '%s' is incompatible"\
 			% args.dataset)
+	dataset = pylib.DatasetCollection.get_dataset(args.dataset)
 	# create cross-validator
 	cv = pylib.model_structures.CrossValidator(
 		cv_props = dict(n_splits = args.cv_folds, **args.cv_shuffle))

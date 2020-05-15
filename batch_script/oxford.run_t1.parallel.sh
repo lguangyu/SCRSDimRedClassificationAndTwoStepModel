@@ -1,8 +1,11 @@
 #!/bin/bash
 
 mkdir -p .log # ouput log directory
+mkdir -p output
+mkdir -p output/oxford
+mkdir -p output/oxford/t1
 
-for dataset in {exponential,platform-1,platform-2}; do
+for dataset in {oxford-exponential,oxford-platform-1,oxford-platform-2}; do
 	for dr in {none,kpca,lda,lsdr,pca,sup_pca}; do
 		for cls in {gnb,lda,lr,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv}; do
 			job_desc="$dataset.$dr.$cls"
@@ -22,7 +25,7 @@ python3 ./script/t1_methods.py \\
 	--dimreducer $dr \\
 	--reduce-dim-to 26 \\
 	--cv-folds 10 \\
-	--output output/${dataset}.${dr}.${cls}.json
+	--output output/oxford/t1/${dataset}.${dr}.${cls}.json
 
 deactivate"
 		done

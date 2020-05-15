@@ -70,15 +70,31 @@ class DatasetBase(object):
 		return
 
 
-class SingleLabelDataset(DatasetBase):
+class SingleLabelDatasetBase(DatasetBase):
 	"""
-	dataset that has only one label category;
+	dataset has only one label category, either phase or strain;
 
-	SingleLabelDataset should have below properties:
+	SingleLabelDatasetBase should have below properties:
 	data:			main data matrix
 	label:			labels encoded as numerical values
 	text_label:		labels in text format
 	label_encoder:	LabelEncoder instance fitted by <text_label>
+	"""
+	pass
+
+
+class DuoLabelDatasetBase(DatasetBase):
+	"""
+	dataset use both phase and strain labels;
+
+	DuoLabelDatasetBase should have below properties:
+	data:					main data matrix (scaled)
+	phase_label:			phase labels encoded as numerical values
+	phase_text_label:		phase labels in text format
+	phase_label_encoder:	LabelEncoder instance fitted by <phase text_label>
+	strain_label:			strain labels encoded as numerical values
+	strain_text_label:		strain labels in text format
+	strain_label_encoder:	LabelEncoder instance fitted by <strain text_label>
 	"""
 	pass
 
@@ -99,11 +115,26 @@ class DatasetCollection(pylib.util.collection_registry.CollectionRegistryBase):
 		*ka, **kw: other keyargs/kwargs passed to queried dataset constructor;
 		"""
 		return cls.query(key)(*ka, **kw)
-		
+
+	@classmethod
+	def check_query_subclass(cls, key, exp_cls) -> bool:
+		"""
+		return True if the dataset queried by <key> is of <exp_cls> type, False
+		otherwise;
+
+		ARGUMENT
+		key: the name of the dataset to query;
+		exp_cls: expected dataset class type, must be subclass of DatasetBase;
+		"""
+		if not (isinstance(exp_cls, type) and issubclass(exp_cls, DatasetBase)):
+			raise TypeError("exp_cls must be a subclass of DatasetBase, "
+				"not '%s'" % type(exp_cls).__name__)
+		return issubclass(cls.query(key), exp_cls)
+
 
 ################################################################################
 # datasets
-class PhaseDatasetBase(SingleLabelDataset):
+class PhaseDatasetBase(SingleLabelDatasetBase):
 	############################################################################
 	# subclass must override this to extract a different phase
 	_extract_phase_ = None
@@ -122,24 +153,24 @@ class PhaseDatasetBase(SingleLabelDataset):
 ################################################################################
 # oxford datasets
 @DatasetCollection.register("oxford-exponential")
-class ExponentialPhaseDataset(PhaseDatasetBase):
+class OxfordExponentialPhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "EXPONENTIAL"
 
 
 @DatasetCollection.register("oxford-platform-1", "oxford-stationary-1")
-class Platform1PhaseDataset(PhaseDatasetBase):
+class OxfordPlatform1PhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "PLATFORM1"
 
 
 @DatasetCollection.register("oxford-platform-2", "oxford-stationary-2")
-class Platform2PhaseDataset(PhaseDatasetBase):
+class OxfordPlatform2PhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "PLATFORM2"
 
 
 @DatasetCollection.register("oxford-strain-only")
-class StrainLabelDataset(SingleLabelDataset):
+class OxfordStrainLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
-		super(StrainLabelDataset, self).__init__(*ka, **kw)
+		super(OxfordStrainLabelDataset, self).__init__(*ka, **kw)
 		self.data = self.pp_scale(self.raw_data)
 		self.text_label = self.raw_strain_label
 		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
@@ -147,9 +178,9 @@ class StrainLabelDataset(SingleLabelDataset):
 
 
 @DatasetCollection.register("oxford-phase-only")
-class PhaseLabelDataset(SingleLabelDataset):
+class OxfordPhaseLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
-		super(PhaseLabelDataset, self).__init__(*ka, **kw)
+		super(OxfordPhaseLabelDataset, self).__init__(*ka, **kw)
 		self.data = self.pp_scale(self.raw_data)
 		self.text_label = self.raw_phase_label
 		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
@@ -157,19 +188,7 @@ class PhaseLabelDataset(SingleLabelDataset):
 
 
 @DatasetCollection.register("oxford-phase-and-strain", "oxford-duo-label")
-class DuoLabelDataset(DatasetBase):
-	"""
-	datasets use both phase and strain labels;
-
-	DuoLabelDataset should have below properties:
-	data:					main data matrix (scaled)
-	phase_label:			phase labels encoded as numerical values
-	phase_text_label:		phase labels in text format
-	phase_label_encoder:	LabelEncoder instance fitted by <phase text_label>
-	strain_label:			strain labels encoded as numerical values
-	strain_text_label:		strain labels in text format
-	strain_label_encoder:	LabelEncoder instance fitted by <strain text_label>
-	"""
+class OxfordDuoLabelDataset(DuoLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super(DuoLabelDataset, self).__init__(*ka, **kw)
 		self.data = self.pp_scale(self.raw_data)
@@ -185,28 +204,45 @@ class DuoLabelDataset(DatasetBase):
 ################################################################################
 # zijian datasets
 @DatasetCollection.register("zijian-exponential")
-class ExponentialPhaseDataset(PhaseDatasetBase):
+class ZijianExponentialPhaseDataset(PhaseDatasetBase):
 	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
 	_raw_label_file_	= "./data/zijian_40.labels.txt"
 	_extract_phase_ = "Exponential"
 
 
 @DatasetCollection.register("zijian-stationary-1")
-class Platform1PhaseDataset(PhaseDatasetBase):
+class ZijianStationary1PhaseDataset(PhaseDatasetBase):
 	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
 	_raw_label_file_	= "./data/zijian_40.labels.txt"
 	_extract_phase_ = "Stationary1"
 
 
 @DatasetCollection.register("zijian-stationary-2")
-class Platform1PhaseDataset(PhaseDatasetBase):
+class ZijianStationary2PhaseDataset(PhaseDatasetBase):
 	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
 	_raw_label_file_	= "./data/zijian_40.labels.txt"
 	_extract_phase_ = "Stationary2"
 
 
 @DatasetCollection.register("zijian-stationary-3")
-class Platform1PhaseDataset(PhaseDatasetBase):
+class ZijianStationary3PhaseDataset(PhaseDatasetBase):
 	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
 	_raw_label_file_	= "./data/zijian_40.labels.txt"
 	_extract_phase_ = "Stationary3"
+
+
+@DatasetCollection.register("zijian-phase-and-strain", "zijian-duo-label")
+class ZijianDuoLabelDataset(DuoLabelDatasetBase):
+	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian_40.labels.txt"
+
+	def __init__(self, *ka, **kw):
+		super(ZijianDuoLabelDataset, self).__init__(*ka, **kw)
+		self.data = self.pp_scale(self.raw_data)
+		self.phase_text_label = self.raw_phase_label
+		self.phase_label_encoder, self.phase_label\
+			= self.pp_encode_label(self.phase_text_label)
+		self.strain_text_label = self.raw_strain_label
+		self.strain_label_encoder, self.strain_label\
+			= self.pp_encode_label(self.strain_text_label)
+		return

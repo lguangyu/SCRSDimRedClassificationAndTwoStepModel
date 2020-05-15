@@ -1,6 +1,9 @@
 #!/bin/bash
 
 mkdir -p .log # ouput log directory
+mkdir -p output
+mkdir -p output/zijian
+mkdir -p output/zijian/t1
 
 for dataset in {zijian-exponential,zijian-stationary-1,zijian-stationary-2,zijian-stationary-3}; do
 	for dr in {none,kpca,lda,lsdr,pca,sup_pca}; do
@@ -9,8 +12,8 @@ for dataset in {zijian-exponential,zijian-stationary-1,zijian-stationary-2,zijia
 			sbatch -J $job_desc \
 				-o ".log/"$job_desc".log" \
 				-e ".log/"$job_desc".err" \
-				-p short -N1 -c2 \
-				--mem 4G --time 12:00:00 \
+				-p short -N1 -c1 \
+				--mem 8G --time 24:00:00 \
 				--wrap \
 "# run experiments #
 echo \$SLURM_JOB_ID >&2
@@ -23,7 +26,7 @@ python3 ./script/t1_methods.py \\
 	--dimreducer $dr \\
 	--reduce-dim-to 40 \\
 	--cv-folds 10 \\
-	--output output/${dataset}.${dr}.${cls}.json
+	--output output/zijian/t1/${dataset}.${dr}.${cls}.json
 
 deactivate"
 		done
