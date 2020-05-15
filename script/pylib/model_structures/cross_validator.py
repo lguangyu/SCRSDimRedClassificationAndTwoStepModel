@@ -37,15 +37,17 @@ class CrossValidator(object):
 		self.__cv_results.append(result)
 		return
 
-	def cross_validate(self, model, X, Y, *ka, **kw):
+	def cross_validate(self, model, X, Y, *ka, duo_label = False, **kw):
 		if not isinstance(model, base.ModelStructureAbstract):
 			raise TypeError("model must be ModelStructureAbstract, not '%s'"\
 				% type(model).__name__)
 		self.reset_cv_results() # remove old results
 		cv = self.cv_driver(**self.cv_props)
-		for train, test in cv.split(X, Y):
+		for train, test in cv.split(X, Y[1] if duo_label else Y):
+			Y_train	= [y[train] for y in Y] if duo_label else Y[train]
+			Y_test	= Y[1][test] if duo_label else Y[test]
 			# use force_create = True will maximize the resource release
-			model.fit(X[train], Y[train], force_create = True)
-			model.predict(X[test], Y[test])
+			model.fit(X[train], Y_train, force_create = True)
+			model.predict(X[test], Y_test)
 			self.add_cv_results(model.serialize())
 		return self

@@ -22,8 +22,8 @@ module load python/3.7.1
 
 python3 ./script/t1_methods.py \\
 	--dataset $dataset \\
-	--classifier $cls \\
 	--dimreducer $dr \\
+	--classifier $cls \\
 	--reduce-dim-to 40 \\
 	--cv-folds 10 \\
 	--output output/zijian/t1/${dataset}.${dr}.${cls}.json

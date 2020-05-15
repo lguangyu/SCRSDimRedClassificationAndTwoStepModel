@@ -190,7 +190,7 @@ class OxfordPhaseLabelDataset(SingleLabelDatasetBase):
 @DatasetCollection.register("oxford-phase-and-strain", "oxford-duo-label")
 class OxfordDuoLabelDataset(DuoLabelDatasetBase):
 	def __init__(self, *ka, **kw):
-		super(DuoLabelDataset, self).__init__(*ka, **kw)
+		super(OxfordDuoLabelDataset, self).__init__(*ka, **kw)
 		self.data = self.pp_scale(self.raw_data)
 		self.phase_text_label = self.raw_phase_label
 		self.phase_label_encoder, self.phase_label\

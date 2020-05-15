@@ -82,100 +82,6 @@ def get_args():
 	return args
 
 
-def load_data(config) -> "data, label":
-	with open(config, "r") as fh:
-		cfg = json.load(fh)
-	# load data
-	data = numpy.loadtxt(cfg["data_file"], dtype = float, delimiter = "\t")
-	# load labels
-	with open(cfg["label_file"], "r") as fh:
-		lines = fh.read().splitlines()
-		lines = [i.split("\t") for i in lines]
-		lv1_labels = [line[cfg["level1_label_col"]] for line in lines]
-		lv2_labels = [line[cfg["level2_label_col"]] for line in lines]
-	assert len(data) == len(lv1_labels), "%d|%d" % (len(data), len(lv1_labels))
-	assert len(data) == len(lv2_labels), "%d|%d" % (len(data), len(lv2_labels))
-	return data, lv1_labels, lv2_labels
-
-
-def _make_level_props_dict(dim_reducer, classifier, dims_remain):
-	ret = dict(dim_reducer = dim_reducer, classifier = classifier,\
-		dims_remain = dims_remain)
-	# FIXME: currently only recognizes lsdr_reg
-	if dim_reducer == "lsdr_reg":
-		ret["regularizer_list"] = [0, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4]
-	return ret
-
-
-def _main():
-	args = get_args()
-	# load data
-	data, lv1_labels, lv2_labels = load_data(args.config)
-	data = sklearn.preprocessing.scale(data)
-	assert numpy.isclose(numpy.mean(data, axis = 0), 0).all()
-	assert numpy.isclose(numpy.std(data, axis = 0), 1).all()
-	univ_labels = [i + j for i, j in zip(lv1_labels, lv2_labels)]
-	# preprocessing, encode labels
-	univ_label_encoder = sklearn.preprocessing.LabelEncoder()
-	univ_label_encoder.fit(univ_labels)
-	encoded_univ_labels = univ_label_encoder.transform(univ_labels)
-	#
-	lv1_label_encoder = sklearn.preprocessing.LabelEncoder()
-	lv1_label_encoder.fit(lv1_labels)
-	encoded_lv1_labels = lv1_label_encoder.transform(lv1_labels)
-	#
-	lv2_label_encoder = sklearn.preprocessing.LabelEncoder()
-	lv2_label_encoder.fit(lv2_labels)
-	encoded_lv2_labels = lv2_label_encoder.transform(lv2_labels)
-	# results
-	res_dict = {}
-	res_dict["lv1_labels"] = list(lv1_label_encoder.classes_)
-	res_dict["lv2_labels"] = list(lv2_label_encoder.classes_)
-	# model
-	for lv1_dr, lv1_cls, lv2_dr, lv2_cls in itertools.product(
-		args.level1_dim_reduc, args.level1_classifier,
-		args.level2_dim_reduc, args.level2_classifier):
-		# log running model
-		model_name = "lv1-%s-%s.lv2-%s-%s" % (lv1_dr, lv1_cls, lv2_dr, lv2_cls)
-		res_dict["model"] = model_name
-		# create model
-		print("model:", model_name)
-		try:
-			# properties of level setups
-			level1_props = _make_level_props_dict(lv1_dr, lv1_cls,\
-				args.level1_reduce_dim_to)
-			level2_props = _make_level_props_dict(lv2_dr, lv2_cls,\
-				args.level2_reduce_dim_to)
-			#print(level2_props)
-			model = pylib.TwoLevelModel(\
-				level1_props = level1_props,\
-				level2_props = level2_props,\
-				indep_level2 = args.indep_level2)
-			# cross validation
-			cv = pylib.TwoLevelCrossValidator(model, args.cv_folds, args.permutation)
-			# run cv
-			cv.run_cv(data, encoded_univ_labels, encoded_lv1_labels, encoded_lv2_labels)
-			# results output
-			res_dict["evaluation"] = cv.evaluation.copy()
-		except Exception as e:
-			res_dict["evaluation"] = "error:" + repr(e)
-		########################################################################
-		# output
-		# for task-level parallelism, we write output into separate files
-		txt_ofile = ".".join([\
-			os.path.basename(args.config),\
-			model_name,\
-			"%d_fold" % args.cv_folds,\
-			"lv2_indep" if args.indep_level2 else "lv2_dep",\
-			"json"])
-		txt_ofile = os.path.join(args.output_txt_dir, txt_ofile)
-		#
-		os.makedirs(args.output_txt_dir, exist_ok = True)
-		with open(txt_ofile, "w") as fh:
-			json.dump(res_dict, fh)
-	return
-
-
 def main():
 	args = get_args()
 	# check and create dataset
@@ -185,6 +91,45 @@ def main():
 			"duo-labelled (both phase and strain), '%s' is incompatible"\
 			% args.dataset)
 	dataset = pylib.DatasetCollection.get_dataset(args.dataset)
+	# create cross validator
+	cv = pylib.model_structures.CrossValidator(
+		cv_props = dict(n_splits = args.cv_folds, **args.cv_shuffle))
+	# create model
+	lv1_props = {
+		"dimreducer_props": {
+			"model": args.level1_dimreducer,
+			"params": {"n_components": args.level1_reduce_dim_to},
+		},
+		"classifier_props": {
+			"model": args.level1_classifier,
+			"params": None,
+		},
+	}
+	lv2_props = {
+		"dimreducer_props": {
+			"model": args.level2_dimreducer,
+			"params": {"n_components": args.level2_reduce_dim_to},
+		},
+		"classifier_props": {
+			"model": args.level2_classifier,
+			"params": None,
+		},
+	}
+	model = pylib.model_structures.TwoLevelDimredClassifEnsemble(
+		lv1_props = lv1_props, lv2_props = lv2_props,
+		indep_lv2 = args.indep_level2)
+	# run cv
+	cv.cross_validate(model, X = dataset.data,
+		Y = (dataset.phase_label, dataset.strain_label),
+		duo_label = True)
+	# output
+	out = dict(mode = "2-level", dataset = args.dataset,
+		phase_labels = dataset.phase_label_encoder.classes_.tolist(),
+		strain_labels = dataset.strain_label_encoder.classes_.tolist(),
+		results = cv.get_cv_results())
+	with pylib.util.file_io.get_fh(args.output, "w") as fp:
+		json.dump(out, fp, sort_keys = True,
+			cls = pylib.util.serializer.SerializerJSONEncoder)
 	return
 
 
