@@ -1,20 +1,18 @@
 #!/bin/bash
 
 mkdir -p .log # ouput log directory
-mkdir -p output
-mkdir -p output/zijian
 mkdir -p output/zijian/t1
 
 for dataset in {zijian-exponential,zijian-stationary-1,zijian-stationary-2,zijian-stationary-3}; do
-	for dr in {none,kpca,lda,lsdr,pca,sup_pca}; do
+	for dr in {none,kpca,lda,ism_sdr,pca,sup_pca}; do
 		for cls in {gnb,lda,lr,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv}; do
-			job_desc="$dataset.$dr.$cls"
-			sbatch -J $job_desc \
-				-o ".log/"$job_desc".log" \
-				-e ".log/"$job_desc".err" \
-				-p short -N1 -c1 \
-				--mem 8G --time 24:00:00 \
-				--wrap \
+			for round in $(seq 0 9); do
+				job_desc="$dataset.$dr.$cls.$round"
+				sbatch -J $job_desc \
+					-o ".log/"$job_desc".log" \
+					-e ".log/"$job_desc".err" \
+					-p short -N1 -c1 --mem 8G --time 8:00:00 \
+					--wrap \
 "# run experiments #
 echo \$SLURM_JOB_ID >&2
 module load python/3.7.1
@@ -26,9 +24,10 @@ python3 ./script/t1_methods.py \\
 	--classifier $cls \\
 	--reduce-dim-to 40 \\
 	--cv-folds 10 \\
-	--output output/zijian/t1/${dataset}.${dr}.${cls}.json
+	--output output/zijian/t1/${dataset}.${dr}.${cls}.${round}.json
 
 deactivate"
+			done
 		done
 	done
 done

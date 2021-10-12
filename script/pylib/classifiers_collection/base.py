@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 
-import abc
 import sklearn.base
 # custom lib
 import pylib.util
 
 
 class ClassifierAbstract(pylib.util.model_serializer.ModelSerializerBase,
-		sklearn.base.BaseEstimator, sklearn.base.ClassifierMixin, abc.ABC):
+		sklearn.base.ClassifierMixin, sklearn.base.BaseEstimator):
 	"""
 	classifier abstract base class; all classifier must subclass this base;
 	"""
-	@abc.abstractmethod
-	def fit(self, *ka, **kw):
-		return self
-	@abc.abstractmethod
-	def predict(self, *ka, **kw):
-		pass
+	pass
 
 
 @pylib.util.model_collection.ModelCollection.init(ClassifierAbstract)

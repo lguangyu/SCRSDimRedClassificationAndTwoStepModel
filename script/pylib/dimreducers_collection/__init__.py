@@ -3,5 +3,5 @@
 from .base import DimReducerAbstract, DimReducerCollection
 from . import simple
 from . import supervised_pca
-from . import hsic_lsdr
-from . import ensemble
+from . import ism_sdr
+#from . import ensemble

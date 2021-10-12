@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 
-import abc
 import sklearn.base
 # custom lib
 import pylib.util
 
 
 class DimReducerAbstract(pylib.util.model_serializer.ModelSerializerBase,
-		sklearn.base.BaseEstimator, sklearn.base.TransformerMixin, abc.ABC):
+		sklearn.base.TransformerMixin, sklearn.base.BaseEstimator):
 	"""
 	classifier abstract base class; all classifier must subclass this base;
 	"""
-	@abc.abstractmethod
-	def fit(self, *ka, **kw):
-		return self
-	@abc.abstractmethod
-	def transform(self, *ka, **kw):
-		pass
+	pass
 
 
 @pylib.util.model_collection.ModelCollection.init(DimReducerAbstract)
