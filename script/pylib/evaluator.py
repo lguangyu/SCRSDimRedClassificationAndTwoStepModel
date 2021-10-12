@@ -21,6 +21,8 @@ class ClassifEvaluator(dict, pylib.util.serializer.SerializerAbstract):
 	@classmethod
 	def evaluate(cls, true_label, pred_label):
 		new = cls()
+		new["true_label"] = [int(i) for i in true_label]
+		new["pred_label"] = [int(i) for i in pred_label]
 		new["average_accuracy"] = sklearn.metrics.accuracy_score(\
 			true_label, pred_label)
 		new["average_precision"] = sklearn.metrics.precision_score(\
@@ -49,7 +51,7 @@ class ClassifEvaluator(dict, pylib.util.serializer.SerializerAbstract):
 				return self[attr] # search from dict
 			raise
 
-	def serializer(self):
+	def serialize(self):
 		return self
 
 	@classmethod

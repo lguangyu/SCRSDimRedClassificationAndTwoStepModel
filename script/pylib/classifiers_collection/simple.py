@@ -6,6 +6,7 @@ import sklearn.discriminant_analysis
 import sklearn.linear_model
 import sklearn.metrics
 import sklearn.naive_bayes
+import sklearn.neighbors
 import sklearn.svm
 # custom lib
 from . import base
@@ -15,6 +16,13 @@ import pylib.util
 @base.ClassifierCollection.register("gnb", "gaussian_naive_bayesian")
 @base.ClassifierAbstract.serialize_init(as_name = "gnb")
 class GaussianNaiveBayesian(sklearn.naive_bayes.GaussianNB,
+		base.ClassifierAbstract):
+	pass
+
+
+@base.ClassifierCollection.register("knn", "k_nearest_neighbors")
+@base.ClassifierAbstract.serialize_init(as_name = "knn")
+class KNearestNeighbors(sklearn.neighbors.KNeighborsClassifier,
 		base.ClassifierAbstract):
 	pass
 

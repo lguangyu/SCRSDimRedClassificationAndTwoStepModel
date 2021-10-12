@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import sys
 import io
+import json
+import sys
 
 
 def get_fh(file, mode = "r", *ka, open_factory = open, **kw) -> io.IOBase:
@@ -31,3 +32,25 @@ def get_fh(file, mode = "r", *ka, open_factory = open, **kw) -> io.IOBase:
 		raise TypeError("file must be io.IOBase or str, not '%s'"\
 			% type(file).__name__)
 	return fh
+
+
+def save_as_json(obj, file, *, human_readable = False, **kw) -> None:
+	"""
+	serialize obj into file in json format;
+
+	ARGUMENTS
+	obj:
+		an object can be serialized as json;
+	file:
+		of type io.IOBase (e.g. stderr) or a str (as file name);
+	human_readable:
+		if True, also pass indent='\\t' and 'sort_keys=True' to json.dump();
+		this overrides those arguments repetitively passed in **kw;
+	**kw:
+		other kwargs passed to json.dump()
+	"""
+	if human_readable:
+		kw.update({"indent": "\t", "sort_keys": True})
+	with get_fh(file, "w") as fp:
+		json.dump(obj, fp, **kw)
+	return

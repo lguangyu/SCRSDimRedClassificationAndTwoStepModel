@@ -18,6 +18,9 @@ def get_args():
 	ap.add_argument("-o", "--output", type = str, default = "-",
 		metavar = "json",
 		help = "write output to this file instead of stdout")
+	ap.add_argument("--human-readable", action = "store_true",
+		help = "save output in human-readable form, but take more space "
+			"(default: no)")
 
 	# model parameters
 	gp = ap.add_argument_group("model options")
@@ -84,8 +87,8 @@ def main():
 	out = dict(mode = "1-level", dataset = args.dataset,
 		labels = dataset.label_encoder.classes_.tolist(),
 		results = cv.get_cv_results())
-	with pylib.util.file_io.get_fh(args.output, "w") as fp:
-		json.dump(out, fp, sort_keys = True,
+	pylib.util.file_io.save_as_json(out, args.output,
+			human_readable = args.human_readable,
 			cls = pylib.util.serializer.SerializerJSONEncoder)
 	return
 
