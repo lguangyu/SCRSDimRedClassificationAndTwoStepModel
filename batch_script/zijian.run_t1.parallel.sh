@@ -1,17 +1,25 @@
 #!/bin/bash
 
-mkdir -p .log # ouput log directory
-mkdir -p output/zijian/t1
+log_dir=".log" # ouput log directory
+out_dir="output/zijian/t1"
+mkdir -p $log_dir
+mkdir -p $out_dir
 
 for dataset in {zijian-exponential,zijian-stationary-1,zijian-stationary-2,zijian-stationary-3}; do
 	for dr in {none,kpca,lda,ism_sdr,pca,sup_pca}; do
-		for cls in {gnb,lda,lr,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv}; do
+		##for cls in {gnb,knn,lda,lr,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv}; do
+		for cls in {gnb,knn,lda,lr}; do
+			alloc_param="-p short -N1 -c1 --mem 4G --time 4:00:00"
+		#for cls in {svm_lin,svm_rbf}; do
+		#	alloc_param="-p short -N1 -c8 --mem 8G --time 4:00:00"
+		#for cls in {svm_lin_cv,svm_rbf_cv}; do
+		#	alloc_param="-p short -N1 -c8 --mem 8G --time 24:00:00"
 			for round in $(seq 0 9); do
 				job_desc="$dataset.$dr.$cls.$round"
 				sbatch -J $job_desc \
-					-o ".log/"$job_desc".log" \
-					-e ".log/"$job_desc".err" \
-					-p short -N1 -c1 --mem 8G --time 8:00:00 \
+					-o "$log_dir/"$job_desc".log" \
+					-e "$log_dir/"$job_desc".err" \
+					$alloc_param \
 					--wrap \
 "# run experiments #
 echo \$SLURM_JOB_ID >&2
@@ -20,11 +28,11 @@ module load python/3.7.1
 
 python3 ./script/t1_methods.py \\
 	--dataset $dataset \\
-	--dimreducer $dr \\
 	--classifier $cls \\
-	--reduce-dim-to 40 \\
+	--dimreducer $dr \\
+	--reduce-dim-to 35 \\
 	--cv-folds 10 \\
-	--output output/zijian/t1/${dataset}.${dr}.${cls}.${round}.json
+	--output ${out_dir}/${dataset}.${dr}.${cls}.${round}.json
 
 deactivate"
 			done

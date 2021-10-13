@@ -1,7 +1,9 @@
 #!/bin/bash
 
-mkdir -p .log # ouput log directory
-mkdir -p output/oxford/t1
+log_dir=".log" # ouput log directory
+out_dir="output/oxford/t1"
+mkdir -p $log_dir
+mkdir -p $out_dir
 
 for dataset in {oxford-exponential,oxford-platform-1,oxford-platform-2}; do
 	for dr in {none,kpca,lda,ism_sdr,pca,sup_pca}; do
@@ -12,8 +14,8 @@ for dataset in {oxford-exponential,oxford-platform-1,oxford-platform-2}; do
 			for round in $(seq 0 9); do
 				job_desc="$dataset.$dr.$cls.$round"
 				sbatch -J $job_desc \
-					-o ".log/"$job_desc".log" \
-					-e ".log/"$job_desc".err" \
+					-o "$log_dir/"$job_desc".log" \
+					-e "$log_dir/"$job_desc".err" \
 					$alloc_param \
 					--wrap \
 "# run experiments #
@@ -27,7 +29,7 @@ python3 ./script/t1_methods.py \\
 	--dimreducer $dr \\
 	--reduce-dim-to 24 \\
 	--cv-folds 10 \\
-	--output output/oxford/t1/${dataset}.${dr}.${cls}.${round}.json
+	--output ${out_dir}/${dataset}.${dr}.${cls}.${round}.json
 
 deactivate"
 			done
