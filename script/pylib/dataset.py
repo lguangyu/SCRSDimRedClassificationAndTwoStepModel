@@ -110,7 +110,7 @@ class DatasetCollection(pylib.util.collection_registry.CollectionRegistryBase):
 		"""
 		create a new instance of queried dataset class;
 
-		ARGUMENT
+		ARGUMENTS
 		key: the name of the dataset to query;
 		*ka, **kw: other keyargs/kwargs passed to queried dataset constructor;
 		"""
@@ -122,7 +122,7 @@ class DatasetCollection(pylib.util.collection_registry.CollectionRegistryBase):
 		return True if the dataset queried by <key> is of <exp_cls> type, False
 		otherwise;
 
-		ARGUMENT
+		ARGUMENTS
 		key: the name of the dataset to query;
 		exp_cls: expected dataset class type, must be subclass of DatasetBase;
 		"""

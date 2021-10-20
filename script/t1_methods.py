@@ -12,24 +12,22 @@ def get_args():
 	ap.add_argument("-i", "-d", "--dataset", type = str, required = True,
 		metavar = "dataset",
 		choices = pylib.DatasetCollection.get_registered_keys(),
-		help = "the dataset to run model on (required); choices: "\
-			+ (", ".join(pylib.DatasetCollection.get_registered_keys()))\
-			+ "; **some entries may have multiple aliases")
+		help = "the dataset to run model on (required); choices: %s"\
+			% pylib.DatasetCollection.repr_reg_keys())
 	ap.add_argument("-o", "--output", type = str, default = "-",
 		metavar = "json",
 		help = "write output to this file instead of stdout")
 	ap.add_argument("--human-readable", action = "store_true",
-		help = "save output in human-readable form, but take more space "
-			"(default: no)")
+		help = "save output in human-readable form, will take slightly more "
+			"space (default: no)")
 
 	# model parameters
 	gp = ap.add_argument_group("model options")
 	gp.add_argument("-R", "--dimreducer", type = str, required = True,
 		metavar = "model",
 		choices = pylib.DimReducerCollection.get_registered_keys(),
-		help = "dimension reduction method (required); choices: "\
-			+ (", ".join(pylib.DimReducerCollection.get_registered_keys()))\
-			+ "; **some entries may have multiple aliases")
+		help = "dimension reduction method (required); choices: %s"\
+			% pylib.DimReducerCollection.repr_reg_keys())
 	gp.add_argument("-D", "--reduce-dim-to", type = int, required = True,
 		metavar = "int",
 		help = "reduce dimensionality to this value, must be positive "
@@ -37,9 +35,8 @@ def get_args():
 	gp.add_argument("-C", "--classifier", type = str, required = True,
 		metavar = "model",
 		choices = pylib.ClassifierCollection.get_registered_keys(),
-		help = "classifier method (required); choices: "\
-			+ (", ".join(pylib.ClassifierCollection.get_registered_keys()))\
-			+ "; **some entries may have multiple aliases")
+		help = "classifier method (required); choices: %s"\
+			% pylib.ClassifierCollection.repr_reg_keys())
 
 	# cross validation parameters
 	gp = ap.add_argument_group("cross-validation options")

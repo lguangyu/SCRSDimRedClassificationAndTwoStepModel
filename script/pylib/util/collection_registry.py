@@ -8,6 +8,7 @@ class CollectionRegistryMetaclass(type):
 	"""
 	def __new__(metaclass, name, bases, attrs):
 		metaclass._check_attr(attrs, "_reg_dict", dict)
+		metaclass._check_attr(attrs, "_key_alias_dict", dict)
 		metaclass._check_attr(attrs, "_reg_type", type, factory = lambda : object)
 		return super(CollectionRegistryMetaclass, metaclass).__new__(
 			metaclass, name, bases, attrs)
@@ -37,8 +38,9 @@ class CollectionRegistryBase(object, metaclass = CollectionRegistryMetaclass):
 	# these class-attributes are essential
 	# subclass can manually define them in class definition, or use .init()
 	# (as decorator)
-	_reg_dict = dict()
-	_reg_type = object
+	_reg_dict		= dict()
+	_key_alias_dict	= dict()
+	_reg_type		= object
 
 	@classmethod
 	def _check_is_subclassed(cls):
@@ -58,7 +60,7 @@ class CollectionRegistryBase(object, metaclass = CollectionRegistryMetaclass):
 		return sorted(cls._reg_dict.keys())
 
 	@classmethod
-	def register(registry, *keys):
+	def register(registry, primary_key, *alias_keys):
 		"""
 		decorator factory to register a model class to this collection
 		"""
@@ -67,10 +69,13 @@ class CollectionRegistryBase(object, metaclass = CollectionRegistryMetaclass):
 			if not issubclass(cls, registry._reg_type):
 				raise TypeError("must register with a subclass of '%s', not "
 					"'%s'" % (registry._reg_type.__name__, cls.__name__))
-			for k in keys:
+			# add key->cls to registry
+			for k in (primary_key, *alias_keys):
 				if k in registry._reg_dict:
 					raise ValueError("key '%s' already registered" % k)
 				registry._reg_dict[k] = cls
+			# add primary->alias
+			registry._key_alias_dict[primary_key] = alias_keys
 			return cls
 		return decorator
 
@@ -81,6 +86,36 @@ class CollectionRegistryBase(object, metaclass = CollectionRegistryMetaclass):
 			raise KeyError("key '%s' not found in registry %s"\
 				% (key, cls.__name__))
 		return cls._reg_dict[key]
+
+	@classmethod
+	def repr_reg_keys(cls, show_alias = "discriminant") -> str:
+		"""
+		represent all registered keys in a string;
+
+		ARGUMENTS
+		show_alias:
+			the strategy to show alias; if 'plain', all alias(es) will be listed
+			the same as primary keys; if 'discriminant', alias(es) will be shown
+			in parenthese after their primary key; if 'no', only primary keys
+			will be shown (default: 'discriminant');
+		"""
+		if show_alias == "no":
+			ret = (", ").join(sorted(cls._key_alias_dict.keys()))
+		elif show_alias == "discriminant":
+			key_alias_list = list()
+			for k in sorted(cls._key_alias_dict.keys()):
+				s = k
+				if cls._key_alias_dict[k]:
+					s += " [aka %s]"\
+						% (", ").join(sorted(cls._key_alias_dict[k]))
+				key_alias_list.append(s)
+			ret = ("; ").join(key_alias_list)
+		elif show_alias == "plain":
+			ret = (", ").join(cls.get_registered_keys())
+		else:
+			raise ValueError("show_alias must be one of: 'no', 'discriminant' "
+				"or 'plain', not '%s'" % show_alias)
+		return ret
 
 	@staticmethod
 	def init(member_type):

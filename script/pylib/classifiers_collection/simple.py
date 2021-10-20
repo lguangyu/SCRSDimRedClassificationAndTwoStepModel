@@ -3,6 +3,7 @@
 import functools
 import numpy
 import sklearn.discriminant_analysis
+import sklearn.ensemble
 import sklearn.linear_model
 import sklearn.metrics
 import sklearn.naive_bayes
@@ -86,3 +87,11 @@ class RBFKernelSVM(sklearn.svm.SVC,
 			# euclidean distances
 			self.set_params(gamma = self.rbf_gamma_by_median(X))
 		return super(RBFKernelSVM, self).fit(X, Y, *ka, **kw)
+
+
+@base.ClassifierCollection.register("rf", "random_forest")
+@base.ClassifierAbstract.serialize_init(as_name = "rf",
+	params = ["n_estimators"])
+class RandomForestClassifier(sklearn.ensemble.RandomForestClassifier,
+		base.ClassifierAbstract):
+	pass
