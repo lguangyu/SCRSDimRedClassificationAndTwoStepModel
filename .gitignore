@@ -1,3 +1,6 @@
+# ignore module
+script/pylib/dimreducers_collection/_ism_sdr/*
+
 # ignore data files
 archive/
 data/
