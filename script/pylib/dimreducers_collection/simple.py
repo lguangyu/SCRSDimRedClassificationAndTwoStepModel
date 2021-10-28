@@ -33,7 +33,10 @@ class Plain(base.DimReducerAbstract):
 class LinearDiscriminantAnalysis(
 		sklearn.discriminant_analysis.LinearDiscriminantAnalysis,
 		base.DimReducerAbstract):
-	pass
+	def fit(self, X, y, *ka, **kw):
+		# validate n_components
+		self.n_components = min(self.n_components, len(set(y)) - 1)
+		return super().fit(X, y, *ka, **kw)
 
 
 @base.DimReducerCollection.register("pca", "principal_component_analysis")
