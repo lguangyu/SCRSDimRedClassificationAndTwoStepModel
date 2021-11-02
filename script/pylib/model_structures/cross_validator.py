@@ -47,8 +47,7 @@ class CrossValidator(object):
 		return
 
 	@staticmethod
-	def _cv_thread_func(args):
-		model, X_train, Y_train, X_test, Y_test = args
+	def _cv_thread_func(model, X_train, Y_train, X_test, Y_test):
 		# use force_create = True will maximize the resource release
 		model.fit(X_train, Y_train, force_create = True)
 		model.predict(X_test, Y_test)
@@ -64,7 +63,7 @@ class CrossValidator(object):
 		self.reset_cv_results() # remove old results
 		cv = self.cv_driver(**self.cv_props)
 		pool = multiprocessing.Pool(n_jobs)
-		res = pool.map(self._cv_thread_func,
+		res = pool.starmap(self._cv_thread_func,
 			self._cv_thread_arg_iter(cv, model, X, Y, duo_label = duo_label))
 		self.add_cv_results(*res)
 		#for train, test in cv.split(X, Y[1] if duo_label else Y):

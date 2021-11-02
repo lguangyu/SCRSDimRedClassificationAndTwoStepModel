@@ -16,7 +16,8 @@ class LinearSVM_CV(cv_parameter_selector._CVClassifParamSelectMixin,
 	"""
 	def fit(self, X, Y, *ka, **kw):
 		# set parameters to cv
-		pars = dict(C = numpy.power(10, numpy.linspace(-5, 5, 11)))
+		_sp = numpy.linspace(-5, 5, 11)
+		pars = dict(C = numpy.power(10, _sp))
 		return super(LinearSVM_CV, self).fit(X, Y, *ka, cv_params = pars, **kw)
 
 

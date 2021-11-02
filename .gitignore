@@ -4,6 +4,7 @@ script/pylib/dimreducers_collection/_ism_sdr/*
 # ignore data files
 archive/
 data/
+data.tar.bz2
 raw/
 remote/
 #batch_script/
