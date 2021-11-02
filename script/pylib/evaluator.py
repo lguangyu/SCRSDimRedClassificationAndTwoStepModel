@@ -44,12 +44,13 @@ class ClassifEvaluator(dict, pylib.util.serializer.SerializerAbstract):
 		return new
 
 	def __getattr__(self, attr):
-		try:
-			return getattr(self, attr)
-		except AttributeError as e:
-			if attr in self:
-				return self[attr] # search from dict
-			raise
+		# look up matching keys only when not having an identically named
+		# attribute
+		if (attr in self) and (not hasattr(self, attr)):
+			ret = self[attr] # search from dict
+		else:
+			ret = super(ClassifEvaluator, self).__getattr__(attr)
+		return ret
 
 	def serialize(self):
 		return self

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import abc
-import multiprocessing.pool
+import multiprocessing
 import sklearn.model_selection
 # custom lib
 import pylib.util
@@ -52,7 +52,8 @@ class CrossValidator(object):
 		# use force_create = True will maximize the resource release
 		model.fit(X_train, Y_train, force_create = True)
 		model.predict(X_test, Y_test)
-		return model.serialize()
+		ret = model.serialize()
+		return ret
 
 
 	def cross_validate(self, model, X, Y, *ka, duo_label = False, n_jobs = 1,
@@ -62,7 +63,7 @@ class CrossValidator(object):
 				% type(model).__name__)
 		self.reset_cv_results() # remove old results
 		cv = self.cv_driver(**self.cv_props)
-		pool = multiprocessing.pool.ThreadPool(n_jobs)
+		pool = multiprocessing.Pool(n_jobs)
 		res = pool.map(self._cv_thread_func,
 			self._cv_thread_arg_iter(cv, model, X, Y, duo_label = duo_label))
 		self.add_cv_results(*res)
