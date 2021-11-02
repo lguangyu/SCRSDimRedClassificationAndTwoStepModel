@@ -16,7 +16,7 @@ class LinearSVM_CV(cv_parameter_selector._CVClassifParamSelectMixin,
 	"""
 	def fit(self, X, Y, *ka, **kw):
 		# set parameters to cv
-		pars = dict(C = numpy.power(10, numpy.arange(11) - 5.0))
+		pars = dict(C = numpy.power(10, numpy.linspace(-5, 5, 11)))
 		return super(LinearSVM_CV, self).fit(X, Y, *ka, cv_params = pars, **kw)
 
 
@@ -30,7 +30,8 @@ class RBFKernelSVM_CV(cv_parameter_selector._CVClassifParamSelectMixin,
 	the scaling parameter gamma;
 	"""
 	def fit(self, X, Y, *ka, **kw):
-		_logsp = numpy.power(10, numpy.arange(11) - 5.0)
-		pars = dict(C = _logsp, gamma = _logsp * self.rbf_gamma_by_median(X))
+		_sp = numpy.linspace(-5, 5, 11)
+		pars = dict(C = numpy.power(10, _sp),
+			gamma = numpy.power(2, _sp) * self.rbf_gamma_by_median(X))
 		return super(RBFKernelSVM_CV, self).fit(X, Y, *ka,
 			use_default_gamma = False, cv_params = pars, **kw)

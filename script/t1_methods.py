@@ -43,6 +43,9 @@ def get_args():
 	gp.add_argument("-f", "--cv-folds", type = int,
 		metavar = "int", default = 10,
 		help = "n-fold cross validation, must be at least 2 (default: 10)")
+	gp.add_argument("-j", "--cv-parallel", type = int,
+		metavar = "int", default = 1,
+		help = "parallel jobs to run cross-validation (default: 1)")
 	gp.add_argument("--cv-shuffle",
 		type = pylib.util.arg_parsing.CVShuffleParam,
 		default = pylib.util.arg_parsing.CVShuffleParam("random"),
@@ -79,7 +82,8 @@ def main():
 		dimreducer_props = dimreducer_props,
 		classifier_props = classifier_props)
 	# run cv
-	cv.cross_validate(model, X = dataset.data, Y = dataset.label)
+	cv.cross_validate(model, X = dataset.data, Y = dataset.label,
+		n_jobs = args.cv_parallel)
 	# output
 	out = dict(mode = "1-level", dataset = args.dataset,
 		labels = dataset.label_encoder.classes_.tolist(),
