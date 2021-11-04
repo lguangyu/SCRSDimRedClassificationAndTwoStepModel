@@ -25,34 +25,60 @@ class CVClassifParamsDict(dict):
 		return [dict(zip(keys, pars)) for pars in pars_mesh]
 
 
-class _CVClassifParamSelectMixin(object):
+class CVClassifParamSelectMixin(object):
 	"""
 	cross validation routines, must be used as a mixin with ClassifierAbstract;
 	.fit() method calls parent class' relative to do the actual training in each
 	split, but the parameter selection is done in CV's .fit() method;
 	the actual invoked .fit() will be dependent to the inheritance [as mro()];
 	"""
-	def _cv_param_mean(self, X, Y, param, *ka, cv_props, eval_metric, **kw):
+	def param_fit_predict(self, X, Y, train, test, *ka, param, **kw):
+		"""
+		apply a candidate parameter set, train with training data, then predict
+		the labels of testing data;
+		this function shoule be used *ONLY* by run_param_cv(), can be overridden
+		by subclasses;
+		"""
+		self.set_params(**param)
+		# and this is why this classed must be used as a mixin;
+		# check mro() for actual .fit() invoked here;
+		super().fit(X[train], Y[train], *ka, **kw)
+		# note this prevents call subclass.predict() per bare .predict()
+		# invocation; this ensures matched .fit() and .predict() from the
+		# same model class
+		pred = super().predict(X[test])
+		return pred
+
+	def run_param_cv(self, X, Y, param, *ka, cv_props, eval_metric, **kw):
 		"""
 		run over a complete round of k-fold cv through k splits given a set of
 		parameters, return the mean evaluation (e.g. accuracy or precision) from
 		all splits' testing sets;
 		"""
-		self.set_params(**param)
 		# cv here, use stratified k fold to ensure even split of each class
 		evals = list()
 		cv = sklearn.model_selection.StratifiedKFold(**cv_props)
 		for train, test in cv.split(X, Y):
-			# and this is why this classed must be used as a mixin;
-			# check mro() for actual .fit() invoked here;
-			super(_CVClassifParamSelectMixin, self)\
-				.fit(X[train], Y[train], *ka, **kw)
-			# note this prevents call subclass.predict() per bare .predict()
-			# invocation; this ensures matched .fit() and .predict() from the
-			# same model class
-			pred = super(_CVClassifParamSelectMixin, self).predict(X[test])
+			pred = self.param_fit_predict(X, Y, train, test, *ka, param = param,
+				**kw)
 			evals.append(ClassifEvaluator.evaluate(Y[test], pred)[eval_metric])
 		return numpy.mean(evals)
+
+	def post_param_cv(self):
+		"""
+		called internally by CVClassifParamSelectMixin.fit() after running all
+		candidate parameter set with internal cv, before running final fit;
+		default is doing nothing; may be overridden by subclasses;
+		"""
+		return
+
+	def sort_candidate_params_list(self, params_list):
+		"""
+		re-arrange candidate params, default is doing nothing; subclasses may
+		want to overridden this method to have parameter sets coming in wanted
+		order;
+		"""
+		return params_list
 
 	def fit(self, X, Y, *ka, cv_params: dict, cv_props: dict = None,
 			eval_metric: str = "average_accuracy", **kw) -> "self":
@@ -83,13 +109,16 @@ class _CVClassifParamSelectMixin(object):
 		#cv_params = cv_params if isinstance(cv_params, CVClassifParamsDict)\
 		#	else CVClassifParamsDict(cv_params)
 		# then safe to expand
-		#paras_expanded = cv_params.expand()
-		paras_expanded = CVClassifParamsDict.expand(cv_params) # well this is ok
-		evals = [self._cv_param_mean(X, Y, i, *ka, cv_props = cv_props,
-			eval_metric = eval_metric, **kw) for i in paras_expanded]
+		#params_list = cv_params.expand()
+		params_list = CVClassifParamsDict(cv_params).expand()
+		params_list = self.sort_candidate_params_list(params_list)
+		# apply candidate params
+		evals = [self.run_param_cv(X, Y, i, *ka, cv_props = cv_props,
+			eval_metric = eval_metric, **kw) for i in params_list]
 		# pick the best parameters
 		best_id = numpy.argmax(evals)
-		best_para = paras_expanded[best_id]
+		best_para = params_expanded[best_id]
 		# retrain with best parameters
 		self.set_params(**best_para)
-		return super(_CVClassifParamSelectMixin, self).fit(X, Y, *ka, **kw)
+		self.post_param_cv()
+		return super(CVClassifParamSelectMixin, self).fit(X, Y, *ka, **kw)
