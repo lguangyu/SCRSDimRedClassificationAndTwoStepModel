@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import collections
 import functools
 import sklearn.metrics
 # custom lib
@@ -53,7 +54,8 @@ class ClassifEvaluator(dict, pylib.util.serializer.SerializerAbstract):
 		return ret
 
 	def serialize(self):
-		return self
+		ret = { k: v for k, v in self.items() if v is not None}
+		return ret
 
 	@classmethod
 	def deserialize(cls, ds):
@@ -66,7 +68,9 @@ class ModelEvaluationResultsMixin(object):
 	"""
 	def __init__(self, *ka, **kw):
 		super(ModelEvaluationResultsMixin, self).__init__(*ka, **kw)
-		self._ev = dict(training = None, testing = None)
+		self._ev = { k: None for k in [
+			"testing", "testing-step-1", "testing-step-2",
+			"training", "training-step-1", "training-step-2"] }
 		return
 
 	def _check_arg_which(allow_all = False):

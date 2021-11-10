@@ -7,14 +7,9 @@ mkdir -p $out_dir
 
 for dataset in {oxford-exponential,oxford-platform-1,oxford-platform-2}; do
 	for dr in {none,kpca,lda,ism_sdr,pca,sup_pca}; do
-		#for cls in {gnb,knn,lda,lr,rf}; do
-		#	alloc_param="-p short -N1 -c1 --mem 4G --time 4:00:00"
-		for cls in {rf,}; do
-			alloc_param="-p short -N1 -c1 --mem 4G --time 4:00:00"
-		#for cls in {svm_lin,svm_rbf}; do
-		#	alloc_param="-p short -N1 -c2 --mem 8G --time 4:00:00"
-		#for cls in {svm_lin_cv,svm_rbf_cv}; do
-		#	alloc_param="-p short -N1 -c4 --mem 8G --time 24:00:00"
+		for cls in {gnb,knn,lda,lr,rf,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv}; do
+			n_cores="10"
+			alloc_param="-p short -N1 -c$n_cores --mem 16G --time 24:00:00"
 			for round in $(seq 0 9); do
 				job_desc="$dataset.$dr.$cls.$round"
 				sbatch -J $job_desc \
@@ -24,16 +19,16 @@ for dataset in {oxford-exponential,oxford-platform-1,oxford-platform-2}; do
 					--wrap \
 "# run experiments #
 echo \$SLURM_JOB_ID >&2
-module load python/3.7.1
-. /home/li.gua/python-virtual-env/python-3.7.1-metagenomic-general/bin/activate
+. /home/li.gua/.local/env/python-3.10-venv/bin/activate
 
 python3 ./script/t1_methods.py \\
 	--dataset $dataset \\
-	--classifier $cls \\
 	--dimreducer $dr \\
 	--reduce-dim-to 24 \\
+	--classifier $cls \\
 	--cv-folds 10 \\
-	--output ${out_dir}/${dataset}.${dr}.${cls}.${round}.json
+	--cv-parallel $n_cores \\
+	--output ${out_dir}/${job_desc}.json
 
 deactivate"
 			done

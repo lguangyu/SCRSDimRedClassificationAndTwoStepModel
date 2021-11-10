@@ -89,8 +89,8 @@ def main():
 		labels = dataset.label_encoder.classes_.tolist(),
 		results = cv.get_cv_results())
 	pylib.util.file_io.save_as_json(out, args.output,
-			human_readable = args.human_readable,
-			cls = pylib.util.serializer.SerializerJSONEncoder)
+		human_readable = args.human_readable,
+		cls = pylib.util.serializer.SerializerJSONEncoder)
 	return
 
 

@@ -104,7 +104,7 @@ class CVClassifParamSelectMixin(object):
 		if not cv_params:
 			raise ValueError("cv_params cannot be empty dict")
 		if cv_props is None:
-			cv_props = dict(n_splits = 10, shuffle = True)
+			cv_props = dict(n_splits = 4, shuffle = True)
 		# coerce cv_params to CVClassifParamsDict class if is plain dict
 		#cv_params = cv_params if isinstance(cv_params, CVClassifParamsDict)\
 		#	else CVClassifParamsDict(cv_params)

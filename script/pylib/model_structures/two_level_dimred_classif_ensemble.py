@@ -109,10 +109,15 @@ class TwoLevelDimredClassifEnsemble(pylib.evaluator.ModelEvaluationResultsMixin,
 			lv2[ulab].fit(X[ulab_mask], lv2_labels[ulab_mask], **lv2_args)
 			fit_pred[ulab_mask] = lv2[ulab].predict(X[ulab_mask])
 		# update training evaluation
-		self.set_eval_results("training", pylib.evaluator.ClassifEvaluator\
-			.evaluate(true_label = lv2_labels, pred_label = fit_pred))
+		self.set_eval_results("training-step-1",
+			pylib.evaluator.ClassifEvaluator.evaluate(
+				true_label = lv1_labels, pred_label = delg_labels))
+		self.set_eval_results("training-step-2",
+			pylib.evaluator.ClassifEvaluator.evaluate(
+				true_label = lv2_labels, pred_label = fit_pred))
 		# clear testing evaluation after (re)fitting
-		self.reset_eval_results("testing")
+		self.reset_eval_results("testing-step-1")
+		self.reset_eval_results("testing-step-2")
 		return self
 
 	def predict(self, X, Y = None):
@@ -135,8 +140,13 @@ class TwoLevelDimredClassifEnsemble(pylib.evaluator.ModelEvaluationResultsMixin,
 			ret[ulab_mask] = lv2[ulab].predict(X[ulab_mask])
 		# if provided Y, calculate testing accuracy, etc.
 		if Y is not None:
-			self.set_eval_results("testing", pylib.evaluator.ClassifEvaluator\
-				.evaluate(true_label = Y, pred_label = ret))
+			lv1_labels, lv2_labels = Y
+			self.set_eval_results("testing-step-1",
+				pylib.evaluator.ClassifEvaluator.evaluate(
+					true_label = lv1_labels, pred_label = lv1_pred))
+			self.set_eval_results("testing-step-2",
+				pylib.evaluator.ClassifEvaluator.evaluate(
+					true_label = lv2_labels, pred_label = ret))
 		return ret
 
 	############################################################################

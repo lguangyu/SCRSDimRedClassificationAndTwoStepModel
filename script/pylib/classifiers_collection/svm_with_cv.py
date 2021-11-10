@@ -4,6 +4,7 @@ import functools
 import gc
 import numpy
 import sklearn.metrics
+import sys
 # custom lib
 from . import base
 from . import simple
@@ -49,6 +50,9 @@ class RBFKernelSVM_CV(cv_parameter_selector.CVClassifParamSelectMixin,
 				self.gamma		= gamma
 				self.gram_mat	= sklearn.metrics.pairwise_kernels(X,
 					metric = "rbf", gamma = gamma)
+			#	print("recalculate kernel", file = sys.stderr)
+			#else:
+			#	print("using existing kernel")
 			# run gc to release the old gram_mat memory
 			gc.collect()
 			return self.gram_mat
@@ -77,13 +81,13 @@ class RBFKernelSVM_CV(cv_parameter_selector.CVClassifParamSelectMixin,
 		# similar for predict() call
 		K_test = gram_mat[numpy.ix_(test, train)]
 		pred = super(cv_parameter_selector.CVClassifParamSelectMixin, self)\
-			.predict(gram_mat[numpy.ix_(test, train)])
+			.predict(K_test)
 		return pred
 
 	def fit(self, X, Y, *ka, **kw):
-		_sp = numpy.linspace(-5, 5, 11)
+		_sp = numpy.linspace(-5, 5, 7)
 		pars = dict(C = numpy.power(10, _sp),
-			gamma = numpy.power(2, _sp) * self.rbf_gamma_by_median(X))
+			gamma = numpy.power(3, _sp) * self.rbf_gamma_by_median(X))
 			# use median Euc distance as reference, low = 2^-5, high = 2^5
 		return super(RBFKernelSVM_CV, self).fit(X, Y, *ka,
 			use_default_gamma = False, cv_params = pars, **kw)

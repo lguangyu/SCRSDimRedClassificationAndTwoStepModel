@@ -41,7 +41,7 @@ class CrossValidator(object):
 	def _cv_thread_arg_iter(self, cv_obj, model, X, Y, *, duo_label = False):
 		for train, test in cv_obj.split(X, Y[1] if duo_label else Y):
 			Y_train	= [y[train] for y in Y] if duo_label else Y[train]
-			Y_test	= Y[1][test] if duo_label else Y[test]
+			Y_test	= [y[test] for y in Y] if duo_label else Y[test]
 			# model, x_train, y_train, x_test, y_test
 			yield model, X[train], Y_train, X[test], Y_test
 		return

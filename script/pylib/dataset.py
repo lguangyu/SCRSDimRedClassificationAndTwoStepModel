@@ -181,12 +181,11 @@ class OxfordStrainLabelDataset(SingleLabelDatasetBase):
 class OxfordPhaseLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super(OxfordPhaseLabelDataset, self).__init__(*ka, **kw)
-		exp_mask = (self.raw_phase_label == "EXPONENTIAL")
-		st1_mask = (self.raw_phase_label == "PLATFORM1")
+		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
 		_label, _data = self.pp_filter(
-			numpy.logical_or(exp_mask, st1_mask), # condition
+			no_st2_mask, # condition
 			self.raw_phase_label, self.raw_data) # filtered list
-		self.data = _data
+		self.data = self.pp_scale(_data)
 		self.text_label = _label
 		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
 		return
@@ -196,11 +195,16 @@ class OxfordPhaseLabelDataset(SingleLabelDatasetBase):
 class OxfordDuoLabelDataset(DuoLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super(OxfordDuoLabelDataset, self).__init__(*ka, **kw)
-		self.data = self.pp_scale(self.raw_data)
-		self.phase_text_label = self.raw_phase_label
+		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
+		_phase_label, _strain_label, _data = self.pp_filter(
+			no_st2_mask, # condition
+			# filtered list
+			self.raw_phase_label, self.raw_strain_label, self.raw_data)
+		self.data = self.pp_scale(_data)
+		self.phase_text_label = _phase_label
 		self.phase_label_encoder, self.phase_label\
 			= self.pp_encode_label(self.phase_text_label)
-		self.strain_text_label = self.raw_strain_label
+		self.strain_text_label = _strain_label
 		self.strain_label_encoder, self.strain_label\
 			= self.pp_encode_label(self.strain_text_label)
 		return
