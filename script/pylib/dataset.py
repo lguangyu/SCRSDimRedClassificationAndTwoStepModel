@@ -171,8 +171,12 @@ class OxfordPlatform2PhaseDataset(PhaseDatasetBase):
 class OxfordStrainLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super(OxfordStrainLabelDataset, self).__init__(*ka, **kw)
-		self.data = self.pp_scale(self.raw_data)
-		self.text_label = self.raw_strain_label
+		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
+		_label, _data = self.pp_filter(
+			no_st2_mask, # condition
+			self.raw_strain_label, self.raw_data) # filtered list
+		self.data = self.pp_scale(_data)
+		self.text_label = _label
 		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
 		return
 

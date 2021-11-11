@@ -23,7 +23,7 @@ for dr2 in {none,kpca,lda,ism_sdr,pca,sup_pca}; do
 echo \$SLURM_JOB_ID >&2
 . /home/li.gua/.local/env/python-3.10-venv/bin/activate
 
-python3 ./script/t1_methods.py \\
+python3 ./script/t2_methods.py \\
 	--dataset $dataset \\
 	--level1-dimreducer $dr1 \\
 	--level1-reduce-dim-to 5 \\
