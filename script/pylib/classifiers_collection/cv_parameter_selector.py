@@ -117,7 +117,7 @@ class CVClassifParamSelectMixin(object):
 			eval_metric = eval_metric, **kw) for i in params_list]
 		# pick the best parameters
 		best_id = numpy.argmax(evals)
-		best_para = params_expanded[best_id]
+		best_para = params_list[best_id]
 		# retrain with best parameters
 		self.set_params(**best_para)
 		self.post_param_cv()
