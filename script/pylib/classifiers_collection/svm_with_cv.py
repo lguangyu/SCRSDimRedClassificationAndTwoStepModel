@@ -22,7 +22,7 @@ class LinearSVM_CV(cv_parameter_selector.CVClassifParamSelectMixin,
 		# set parameters to cv
 		_sp = numpy.linspace(-5, 5, 11)
 		pars = dict(C = numpy.power(10, _sp))
-		return super(LinearSVM_CV, self).fit(X, Y, *ka, cv_params = pars, **kw)
+		return super().fit(X, Y, *ka, cv_params = pars, **kw)
 
 
 @base.ClassifierCollection.register("svm_rbf_cv", "rbf_kernel_svm_cv")
@@ -103,3 +103,20 @@ class RBFKernelSVM_CV(cv_parameter_selector.CVClassifParamSelectMixin,
 		# sort by gamma; so we can use the cached gram_mat as much as possible
 		# to prevent repetitive computation
 		return sorted(params_list, key = lambda x: x["gamma"])
+
+
+@base.ClassifierCollection.register("svm_rbf_man", "rbf_kernel_svm_manual")
+@base.ClassifierAbstract.serialize_init(as_name = "svm_rbf_man",
+	params = ["C", "gamma"])
+class RBFKernelSVM_MAN(simple.RBFKernelSVM):
+	"""
+	a svm_rbf class that can manually input hyperparameters herein;
+	hyperparameter values can be manually taken from preliminary svm_rbf_cv runs
+	to bypass the time-consuming cv parameter selection;
+	the classifier name will be still reported as 'svm_rbf_cv' in the output;
+	"""
+	@functools.wraps(sklearn.svm.SVC.__init__)
+	def __init__(self, C = 10.0, gamma = 0.0014186314935490506, **kw):
+		# 1.0 and 0.0014186314935490506 as mean of none+svm_rbf_cv t2/step_1 run
+		super().__init__(C = C, gamma = gamma, **kw)
+		return

@@ -23,7 +23,7 @@ class cached_property(property):
 				delattr(inst, self.prop_name)
 			return
 		# 
-		return super(cached_property, self).__init__(fget, None, fdel, **kw)
+		return super().__init__(fget, None, fdel, **kw)
 
 
 class DatasetBase(object):
@@ -66,7 +66,7 @@ class DatasetBase(object):
 		return encoder, encoder.fit_transform(label)
 
 	def __init__(self, *ka, **kw):
-		super(DatasetBase, self).__init__(*ka, **kw)
+		super().__init__(*ka, **kw)
 		return
 
 
@@ -140,7 +140,7 @@ class PhaseDatasetBase(SingleLabelDatasetBase):
 	_extract_phase_ = None
 
 	def __init__(self, *ka, **kw):
-		super(PhaseDatasetBase, self).__init__(*ka, **kw)
+		super().__init__(*ka, **kw)
 		_label, _data = self.pp_filter(
 			(self.raw_phase_label == self._extract_phase_), # condition
 			self.raw_strain_label, self.raw_data) # filtered list
@@ -170,7 +170,7 @@ class OxfordPlatform2PhaseDataset(PhaseDatasetBase):
 @DatasetCollection.register("oxford-strain-only")
 class OxfordStrainLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
-		super(OxfordStrainLabelDataset, self).__init__(*ka, **kw)
+		super().__init__(*ka, **kw)
 		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
 		_label, _data = self.pp_filter(
 			no_st2_mask, # condition
@@ -184,7 +184,7 @@ class OxfordStrainLabelDataset(SingleLabelDatasetBase):
 @DatasetCollection.register("oxford-phase-only")
 class OxfordPhaseLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
-		super(OxfordPhaseLabelDataset, self).__init__(*ka, **kw)
+		super().__init__(*ka, **kw)
 		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
 		_label, _data = self.pp_filter(
 			no_st2_mask, # condition
@@ -198,7 +198,7 @@ class OxfordPhaseLabelDataset(SingleLabelDatasetBase):
 @DatasetCollection.register("oxford-phase-and-strain", "oxford-duo-label")
 class OxfordDuoLabelDataset(DuoLabelDatasetBase):
 	def __init__(self, *ka, **kw):
-		super(OxfordDuoLabelDataset, self).__init__(*ka, **kw)
+		super().__init__(*ka, **kw)
 		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
 		_phase_label, _strain_label, _data = self.pp_filter(
 			no_st2_mask, # condition
@@ -250,9 +250,22 @@ class ZijianPhaseLabelDataset(SingleLabelDatasetBase):
 	_raw_label_file_	= "./data/zijian_40.labels.txt"
 
 	def __init__(self, *ka, **kw):
-		super(ZijianPhaseLabelDataset, self).__init__(*ka, **kw)
+		super().__init__(*ka, **kw)
 		self.data = self.pp_scale(self.raw_data)
 		self.text_label = self.raw_phase_label
+		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		return
+
+
+@DatasetCollection.register("zijian-strain-only")
+class ZijianStrainLabelDataset(SingleLabelDatasetBase):
+	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
+	_raw_label_file_	= "./data/zijian_40.labels.txt"
+
+	def __init__(self, *ka, **kw):
+		super().__init__(*ka, **kw)
+		self.data = self.pp_scale(self.raw_data)
+		self.text_label = self.raw_strain_label
 		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
 		return
 
@@ -263,7 +276,7 @@ class ZijianDuoLabelDataset(DuoLabelDatasetBase):
 	_raw_label_file_	= "./data/zijian_40.labels.txt"
 
 	def __init__(self, *ka, **kw):
-		super(ZijianDuoLabelDataset, self).__init__(*ka, **kw)
+		super().__init__(*ka, **kw)
 		self.data = self.pp_scale(self.raw_data)
 		self.phase_text_label = self.raw_phase_label
 		self.phase_label_encoder, self.phase_label\
