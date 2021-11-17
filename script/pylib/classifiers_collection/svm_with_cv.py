@@ -85,7 +85,7 @@ class RBFKernelSVM_CV(cv_parameter_selector.CVClassifParamSelectMixin,
 		return pred
 
 	def fit(self, X, Y, *ka, **kw):
-		_sp = numpy.linspace(-5, 5, 7)
+		_sp = numpy.linspace(-5, 5, 11)
 		pars = dict(C = numpy.power(10, _sp),
 			gamma = numpy.power(3, _sp) * self.rbf_gamma_by_median(X))
 			# use median Euc distance as reference, low = 2^-5, high = 2^5
@@ -113,7 +113,6 @@ class RBFKernelSVM_MAN(simple.RBFKernelSVM):
 	a svm_rbf class that can manually input hyperparameters herein;
 	hyperparameter values can be manually taken from preliminary svm_rbf_cv runs
 	to bypass the time-consuming cv parameter selection;
-	the classifier name will be still reported as 'svm_rbf_cv' in the output;
 	"""
 	@functools.wraps(sklearn.svm.SVC.__init__)
 	def __init__(self, C = 10.0, gamma = 0.0014186314935490506, **kw):
