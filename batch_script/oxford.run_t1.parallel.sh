@@ -15,7 +15,7 @@ for dataset in {oxford-exponential,oxford-platform-1,oxford-platform-2}; do
 				sbatch -J $job_desc \
 					-o "$log_dir/"$job_desc".log" \
 					-e "$log_dir/"$job_desc".err" \
-					$alloc_param \
+					$alloc_param "$@" \
 					--wrap \
 "# run experiments #
 echo \$SLURM_JOB_ID >&2

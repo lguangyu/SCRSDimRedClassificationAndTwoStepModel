@@ -216,38 +216,42 @@ class OxfordDuoLabelDataset(DuoLabelDatasetBase):
 
 ################################################################################
 # zijian datasets
+ZIJIAN_DATA_FILE	= "./data/zijian_40.normalized_l2.data.tsv"
+ZIJIAN_LABEL_FILE	= "./data/zijian_40.labels.txt"
+
+
 @DatasetCollection.register("zijian-exponential")
 class ZijianExponentialPhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian_40.labels.txt"
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
 	_extract_phase_ = "Exponential"
 
 
 @DatasetCollection.register("zijian-stationary-1")
 class ZijianStationary1PhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian_40.labels.txt"
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
 	_extract_phase_ = "Stationary1"
 
 
 @DatasetCollection.register("zijian-stationary-2")
 class ZijianStationary2PhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian_40.labels.txt"
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
 	_extract_phase_ = "Stationary2"
 
 
 @DatasetCollection.register("zijian-stationary-3")
 class ZijianStationary3PhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian_40.labels.txt"
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
 	_extract_phase_ = "Stationary3"
 
 
 @DatasetCollection.register("zijian-phase-only")
 class ZijianPhaseLabelDataset(SingleLabelDatasetBase):
-	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian_40.labels.txt"
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
 
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -259,8 +263,8 @@ class ZijianPhaseLabelDataset(SingleLabelDatasetBase):
 
 @DatasetCollection.register("zijian-strain-only")
 class ZijianStrainLabelDataset(SingleLabelDatasetBase):
-	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian_40.labels.txt"
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
 
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -272,8 +276,8 @@ class ZijianStrainLabelDataset(SingleLabelDatasetBase):
 
 @DatasetCollection.register("zijian-phase-and-strain", "zijian-duo-label")
 class ZijianDuoLabelDataset(DuoLabelDatasetBase):
-	_raw_data_file_		= "./data/zijian_40.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/zijian_40.labels.txt"
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
 
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -282,6 +286,65 @@ class ZijianDuoLabelDataset(DuoLabelDatasetBase):
 		self.phase_label_encoder, self.phase_label\
 			= self.pp_encode_label(self.phase_text_label)
 		self.strain_text_label = self.raw_strain_label
+		self.strain_label_encoder, self.strain_label\
+			= self.pp_encode_label(self.strain_text_label)
+		return
+
+
+@DatasetCollection.register("zijian-exp-sta1-phase-only")
+class ZijianExpSta1PhaseLabelDataset(SingleLabelDatasetBase):
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
+
+	def __init__(self, *ka, **kw):
+		super().__init__(*ka, **kw)
+		mask = (self.raw_phase_label == "Exponential")\
+			| (self.raw_phase_label == "Stationary1")
+		_label, _data = self.pp_filter(
+			mask, # condition
+			self.raw_phase_label, self.raw_data) # filtered list
+		self.data = self.pp_scale(_data)
+		self.text_label = _label
+		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		return
+
+
+@DatasetCollection.register("zijian-exp-sta1-strain-only")
+class ZijianExpStaStrainLabelDataset(SingleLabelDatasetBase):
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
+
+	def __init__(self, *ka, **kw):
+		super().__init__(*ka, **kw)
+		mask = (self.raw_phase_label == "Exponential")\
+			| (self.raw_phase_label == "Stationary1")
+		_label, _data = self.pp_filter(
+			mask, # condition
+			self.raw_strain_label, self.raw_data) # filtered list
+		self.data = self.pp_scale(_data)
+		self.text_label = _label
+		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		return
+
+
+@DatasetCollection.register("zijian-exp-sta1-phase-and-strain", "zijian-exp-sta1-duo-label")
+class ZijianExpStaDuoLabelDataset(DuoLabelDatasetBase):
+	_raw_data_file_		= ZIJIAN_DATA_FILE
+	_raw_label_file_	= ZIJIAN_LABEL_FILE
+
+	def __init__(self, *ka, **kw):
+		super().__init__(*ka, **kw)
+		mask = (self.raw_phase_label == "Exponential")\
+			| (self.raw_phase_label == "Stationary1")
+		_phase_label, _strain_label, _data = self.pp_filter(
+			mask, # condition
+			# filtered list
+			self.raw_phase_label, self.raw_strain_label, self.raw_data)
+		self.data = self.pp_scale(_data)
+		self.phase_text_label = _phase_label
+		self.phase_label_encoder, self.phase_label\
+			= self.pp_encode_label(self.phase_text_label)
+		self.strain_text_label = _strain_label
 		self.strain_label_encoder, self.strain_label\
 			= self.pp_encode_label(self.strain_text_label)
 		return

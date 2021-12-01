@@ -1,15 +1,15 @@
 #!/bin/bash
 
 log_dir=".log" # ouput log directory
-out_dir="output/oxford/t2/step_1"
+out_dir="output/zijian/t2/step_1-exp_sta1"
 mkdir -p $log_dir
 mkdir -p $out_dir
 
-dataset="oxford-phase-only"
+dataset="zijian-exp-sta1-phase-only"
 for dr in {none,kpca,lda,ism_sdr,pca,sup_pca}; do
 	for cls in {gnb,knn,lda,lr,rf,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv}; do
 		n_cores="10"
-		alloc_param="-p short -N1 -c$n_cores --mem 8G --time 24:00:00"
+		alloc_param="-p short -N1 -c$n_cores --mem 32G --time 24:00:00"
 		for round in $(seq 0 9); do
 			job_desc="$dataset.$dr.$cls.$round"
 			sbatch -J $job_desc \

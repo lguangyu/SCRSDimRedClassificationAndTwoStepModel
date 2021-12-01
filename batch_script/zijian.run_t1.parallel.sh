@@ -15,7 +15,7 @@ for dataset in {zijian-exponential,zijian-stationary-1,zijian-stationary-2,zijia
 				sbatch -J $job_desc \
 					-o "$log_dir/"$job_desc".log" \
 					-e "$log_dir/"$job_desc".err" \
-					$alloc_param \
+					$alloc_param "$@" \
 					--wrap \
 "# run experiments #
 echo \$SLURM_JOB_ID >&2
