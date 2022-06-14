@@ -49,9 +49,21 @@ class DatasetBase(object):
 	def raw_phase_label(self):
 		return self.raw_label[:, 0]
 
+	@cached_property
+	def phase_label_encoder(self):
+		encoder = sklearn.preprocessing.LabelEncoder()
+		encoded.fit(self.raw_phase_label)
+		return encoder
+
 	@property
 	def raw_strain_label(self):
 		return self.raw_label[:, 1]
+
+	@cached_property
+	def strain_label_encoder(self):
+		encoder = sklearn.preprocessing.LabelEncoder()
+		encoder.fit(self.raw_strain_label)
+		return encoder
 
 	############################################################################
 	# preprocess pipeline routines
@@ -60,10 +72,6 @@ class DatasetBase(object):
 
 	def pp_filter(self, cond, *data, axis = 0, **kw):
 		return tuple([numpy.compress(cond, d, axis = axis, **kw) for d in data])
-
-	def pp_encode_label(self, label):
-		encoder = sklearn.preprocessing.LabelEncoder()
-		return encoder, encoder.fit_transform(label)
 
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -141,12 +149,13 @@ class PhaseDatasetBase(SingleLabelDatasetBase):
 
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
-		_label, _data = self.pp_filter(
+		_text_label, _data = self.pp_filter(
 			(self.raw_phase_label == self._extract_phase_), # condition
 			self.raw_strain_label, self.raw_data) # filtered list
 		self.data = self.pp_scale(_data)
-		self.text_label = _label
-		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		self.text_label = _text_label
+		self.label_encoder = self.strain_label_encoder
+		self.label = self.label_encoder.transform(_text_label)
 		return
 
 
@@ -172,12 +181,13 @@ class OxfordStrainLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
-		_label, _data = self.pp_filter(
+		_text_label, _data = self.pp_filter(
 			no_st2_mask, # condition
 			self.raw_strain_label, self.raw_data) # filtered list
 		self.data = self.pp_scale(_data)
-		self.text_label = _label
-		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		self.text_label = _text_label
+		self.label_encoder = self.strain_label_encoder
+		self.label = self.label_encoder.transform(_text_label)
 		return
 
 
@@ -186,12 +196,13 @@ class OxfordPhaseLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
-		_label, _data = self.pp_filter(
+		_text_label, _data = self.pp_filter(
 			no_st2_mask, # condition
 			self.raw_phase_label, self.raw_data) # filtered list
 		self.data = self.pp_scale(_data)
-		self.text_label = _label
-		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		self.text_label = _text_label
+		self.label_encoder = self.phase_label_encoder
+		self.label = self.label_encoder.transform(_text_label)
 		return
 
 
@@ -200,17 +211,17 @@ class OxfordDuoLabelDataset(DuoLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
-		_phase_label, _strain_label, _data = self.pp_filter(
+		_phase_text_label, _strain_text_label, _data = self.pp_filter(
 			no_st2_mask, # condition
 			# filtered list
 			self.raw_phase_label, self.raw_strain_label, self.raw_data)
 		self.data = self.pp_scale(_data)
-		self.phase_text_label = _phase_label
-		self.phase_label_encoder, self.phase_label\
-			= self.pp_encode_label(self.phase_text_label)
-		self.strain_text_label = _strain_label
-		self.strain_label_encoder, self.strain_label\
-			= self.pp_encode_label(self.strain_text_label)
+		self.phase_text_label = _phase_text_label
+		self.strain_text_label = _strain_text_label
+		self.phase_label = self.phase_label_encoder.transform(
+			_phase_text_label)
+		self.strain_label = self.strain_label_encoder.transform(
+			_strain_text_label)
 		return
 
 
@@ -257,7 +268,8 @@ class ZijianPhaseLabelDataset(SingleLabelDatasetBase):
 		super().__init__(*ka, **kw)
 		self.data = self.pp_scale(self.raw_data)
 		self.text_label = self.raw_phase_label
-		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		self.label_encoder = self.phase_label_encoder
+		self.label = self.label_encoder.transform(self.text_label)
 		return
 
 
@@ -270,7 +282,8 @@ class ZijianStrainLabelDataset(SingleLabelDatasetBase):
 		super().__init__(*ka, **kw)
 		self.data = self.pp_scale(self.raw_data)
 		self.text_label = self.raw_strain_label
-		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		self.label_encoder = self.strain_label_encoder
+		self.label = self.label_encoder.transform(self.text_label)
 		return
 
 
@@ -283,11 +296,9 @@ class ZijianDuoLabelDataset(DuoLabelDatasetBase):
 		super().__init__(*ka, **kw)
 		self.data = self.pp_scale(self.raw_data)
 		self.phase_text_label = self.raw_phase_label
-		self.phase_label_encoder, self.phase_label\
-			= self.pp_encode_label(self.phase_text_label)
 		self.strain_text_label = self.raw_strain_label
-		self.strain_label_encoder, self.strain_label\
-			= self.pp_encode_label(self.strain_text_label)
+		self.phase_label = self.phase_label_encoder(self.phase_text_label)
+		self.strain_label = self.strain_label_encoder(self.strain_text_label)
 		return
 
 
@@ -300,12 +311,13 @@ class ZijianExpSta1PhaseLabelDataset(SingleLabelDatasetBase):
 		super().__init__(*ka, **kw)
 		mask = (self.raw_phase_label == "Exponential")\
 			| (self.raw_phase_label == "Stationary1")
-		_label, _data = self.pp_filter(
+		_text_label, _data = self.pp_filter(
 			mask, # condition
 			self.raw_phase_label, self.raw_data) # filtered list
 		self.data = self.pp_scale(_data)
-		self.text_label = _label
-		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		self.text_label = _text_label
+		self.label_encoder = self.phase_label_encoder
+		self.label = self.label_encoder.transform(_text_label)
 		return
 
 
@@ -318,12 +330,13 @@ class ZijianExpStaStrainLabelDataset(SingleLabelDatasetBase):
 		super().__init__(*ka, **kw)
 		mask = (self.raw_phase_label == "Exponential")\
 			| (self.raw_phase_label == "Stationary1")
-		_label, _data = self.pp_filter(
+		_text_label, _data = self.pp_filter(
 			mask, # condition
 			self.raw_strain_label, self.raw_data) # filtered list
 		self.data = self.pp_scale(_data)
-		self.text_label = _label
-		self.label_encoder, self.label = self.pp_encode_label(self.text_label)
+		self.text_label = _text_label
+		self.label_encoder = self.strain_label_encoder
+		self.label = self.label_encoder.transform(_text_label)
 		return
 
 
@@ -336,15 +349,13 @@ class ZijianExpStaDuoLabelDataset(DuoLabelDatasetBase):
 		super().__init__(*ka, **kw)
 		mask = (self.raw_phase_label == "Exponential")\
 			| (self.raw_phase_label == "Stationary1")
-		_phase_label, _strain_label, _data = self.pp_filter(
+		_phase_text_label, _strain_text_label, _data = self.pp_filter(
 			mask, # condition
 			# filtered list
 			self.raw_phase_label, self.raw_strain_label, self.raw_data)
 		self.data = self.pp_scale(_data)
-		self.phase_text_label = _phase_label
-		self.phase_label_encoder, self.phase_label\
-			= self.pp_encode_label(self.phase_text_label)
-		self.strain_text_label = _strain_label
-		self.strain_label_encoder, self.strain_label\
-			= self.pp_encode_label(self.strain_text_label)
+		self.phase_text_label = self._phase_text_label
+		self.strain_text_label = self._strain_text_label
+		self.phase_label = self.phase_label_encoder(_phase_text_label)
+		self.strain_label = self.strain_label_encoder(_strain_text_label)
 		return
