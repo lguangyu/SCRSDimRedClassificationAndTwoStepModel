@@ -10,7 +10,14 @@ class DimReducerAbstract(pylib.util.model_serializer.ModelSerializerBase,
 	"""
 	classifier abstract base class; all classifier must subclass this base;
 	"""
-	pass
+	@property
+	def feature_score(self):
+		"""
+		report the scores of each input feature; if used on a DR class that
+		does not implement this method, a NotImplementedError will be raised
+		"""
+		raise NotImplementedError("feature_score not implemented by '%s'"\
+			% type(self).__name__)
 
 
 @pylib.util.model_collection.ModelCollection.init(DimReducerAbstract)

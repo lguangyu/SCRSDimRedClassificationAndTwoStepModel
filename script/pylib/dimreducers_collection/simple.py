@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import functools
+import numpy
 import sklearn.decomposition
 import sklearn.discriminant_analysis
 # custom lib
@@ -19,12 +20,14 @@ class Plain(base.DimReducerAbstract):
 		# n_components is used to absorb the argument passed to initializer
 		# it has no actual effect in this class
 		pass
-
-	def fit(self, *ka, **kw):
+	def fit(self, X, *ka, **kw):
+		self._d_in = X.shape[1]
 		return self
-
 	def transform(self, X, *ka, **kw):
 		return X
+	@property
+	def feature_score(self):
+		return numpy.ones(self._d_in, dtype = float)
 
 
 @base.DimReducerCollection.register("lda", "linear_discriminant_analysis")
@@ -37,6 +40,9 @@ class LinearDiscriminantAnalysis(
 		# validate n_components
 		self.n_components = min(self.n_components, len(set(y)) - 1)
 		return super().fit(X, y, *ka, **kw)
+	@property
+	def feature_score(self):
+		return numpy.linalg.norm(self.scalings_, ord = 2, axis = 1)
 
 
 @base.DimReducerCollection.register("pca", "principal_component_analysis")
@@ -44,7 +50,9 @@ class LinearDiscriminantAnalysis(
 	params = ["n_components"])
 class PrincipalComponentAnalysis(sklearn.decomposition.PCA,
 		base.DimReducerAbstract):
-	pass
+	@property
+	def feature_score(self):
+		return numpy.linalg.norm(self.components_, ord = 2, axis = 0)
 
 
 @base.DimReducerCollection.register("kpca", "kernel_principal_component_analysis")
