@@ -52,7 +52,7 @@ class DatasetBase(object):
 	@cached_property
 	def phase_label_encoder(self):
 		encoder = sklearn.preprocessing.LabelEncoder()
-		encoded.fit(self.raw_phase_label)
+		encoder.fit(self.raw_phase_label)
 		return encoder
 
 	@property
