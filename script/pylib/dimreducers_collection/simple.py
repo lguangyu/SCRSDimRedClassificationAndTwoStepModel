@@ -42,7 +42,8 @@ class LinearDiscriminantAnalysis(
 		return super().fit(X, y, *ka, **kw)
 	@property
 	def feature_score(self):
-		return numpy.linalg.norm(self.scalings_, ord = 2, axis = 1)
+		return self.scalings_[:, :35].T
+		#return numpy.linalg.norm(self.scalings_, ord = 2, axis = 1)
 
 
 @base.DimReducerCollection.register("pca", "principal_component_analysis")
@@ -52,7 +53,8 @@ class PrincipalComponentAnalysis(sklearn.decomposition.PCA,
 		base.DimReducerAbstract):
 	@property
 	def feature_score(self):
-		return numpy.linalg.norm(self.components_, ord = 2, axis = 0)
+		return self.components_[:35].copy()
+		#return numpy.linalg.norm(self.components_, ord = 2, axis = 0)
 
 
 @base.DimReducerCollection.register("kpca", "kernel_principal_component_analysis")
