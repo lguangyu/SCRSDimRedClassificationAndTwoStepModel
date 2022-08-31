@@ -13,3 +13,5 @@ from . import dataset
 from .dataset import DatasetCollection
 # parsing results, useful in results summary scripts
 from . import result_parsing
+# feature ranking
+from .feature_ranking import FeatureRankAbstract, FeatureRankCollection 

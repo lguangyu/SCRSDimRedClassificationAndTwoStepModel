@@ -304,8 +304,8 @@ class ZijianDuoLabelDataset(DuoLabelDatasetBase):
 		self.data = self.pp_scale(self.raw_data)
 		self.phase_text_label = self.raw_phase_label
 		self.strain_text_label = self.raw_strain_label
-		self.phase_label = self.phase_label_encoder(self.phase_text_label)
-		self.strain_label = self.strain_label_encoder(self.strain_text_label)
+		self.phase_label = self.phase_label_encoder.transform(self.phase_text_label)
+		self.strain_label = self.strain_label_encoder.transform(self.strain_text_label)
 		return
 
 
@@ -366,6 +366,6 @@ class ZijianExpStaDuoLabelDataset(DuoLabelDatasetBase):
 		self.data = self.pp_scale(_data)
 		self.phase_text_label = self._phase_text_label
 		self.strain_text_label = self._strain_text_label
-		self.phase_label = self.phase_label_encoder(_phase_text_label)
-		self.strain_label = self.strain_label_encoder(_strain_text_label)
+		self.phase_label = self.phase_label_encoder.transform(_phase_text_label)
+		self.strain_label = self.strain_label_encoder.transform(_strain_text_label)
 		return
