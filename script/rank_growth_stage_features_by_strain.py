@@ -19,6 +19,11 @@ def get_args():
 		choices = pylib.FeatureRankCollection.get_registered_keys(),
 		help = "feature rank method (required); choices: %s"\
 			% pylib.FeatureRankCollection.repr_reg_keys())
+	ap.add_argument("-l", "--strain-list", type = str, default = None,
+		metavar = "str[,str...]",
+		help = "run feature rank on a list of selected strains; multiple "
+			"strains are separated by comma (,)i; if remain unspecified, will "
+			"run on all strains found in the given dataset")
 	ap.add_argument("-o", "--output", type = str, default = "-",
 		metavar = "tsv",
 		help = "write output to this file instead of stdout")
@@ -30,17 +35,23 @@ def get_args():
 	return args
 
 
-def rank_growth_stage_features_by_strain(dataset, method: str) -> dict:
+def rank_growth_stage_features_by_strain(dataset, method: str,
+		strain_list = None) -> dict:
 	ret = dict()
 	rank_meth = pylib.FeatureRankCollection.query(method)()
-	for l in numpy.unique(dataset.strain_label):
-		mask = dataset.strain_label == l
+	if strain_list is None:
+		strain_list = numpy.unique(dataset.strain_text_label)
+	else:
+		strain_list = strain_list.split(",")
+	# calcualte for each strain label
+	for text_label in strain_list:
+		label = dataset.strain_label_encoder.transform([text_label])[0]
+		mask = dataset.strain_label == label
 		rank = rank_meth.rank_features(
 			X = dataset.data[mask, :],
 			Y = dataset.phase_label[mask],
 		)
 		# add to return dict
-		text_label = dataset.strain_label_encoder.inverse_transform([l])[0]
 		ret[text_label] = rank
 	return ret
 
@@ -55,9 +66,10 @@ def main():
 			% args.dataset)
 	dataset = pylib.DatasetCollection.get_dataset(args.dataset)
 	# calculate feature rank
-	rank_dict = rank_growth_stage_features_by_strain(dataset, args.rank_method)
+	rank_dict = rank_growth_stage_features_by_strain(dataset, args.rank_method,
+		strain_list = args.strain_list)
 	# output
-	with pylib.util.file_io.get_fh(args.output) as fp:
+	with pylib.util.file_io.get_fh(args.output, "w") as fp:
 		for k in sorted(rank_dict.keys()):
 			print(("\t").join([k] + [str(i) for i in rank_dict[k].tolist()]),
 				file = fp)
