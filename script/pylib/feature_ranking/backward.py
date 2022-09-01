@@ -26,7 +26,7 @@ class FeatureRankBackwardBase(base.FeatureRankAbstract):
 		ascend_rank = list()
 		remain_feat = set(range(X.shape[1]))
 
-		while remain_feat:
+		while len(remain_feat) >= 2:
 			# calculate the score of each feature
 			remain_feat_list = list(remain_feat)
 			relev_list = list()
@@ -42,13 +42,17 @@ class FeatureRankBackwardBase(base.FeatureRankAbstract):
 			ascend_rank.append(f)
 			# remove f from remain_feat to continue the outer loop
 			remain_feat.remove(f)
+		# add the last feature
+		ascend_rank.append(remain_feat.pop())
+		if remain_feat:
+			raise RuntimeError("something went wrong, 'remain_feat' not empty")
 
 		# flip the order due to backward selection
 		ret = numpy.asarray(ascend_rank[::-1])
 		return ret
 
 
-@base.FeatureRankCollection.register("hsic")
+@base.FeatureRankCollection.register("hsic", "bahsic")
 class HSIC(FeatureRankBackwardBase,
 		pylib.util.kernel_routines.RBFKernelRoutinesMixin):
 	def calc_relevence(self, X, Y) -> float:
