@@ -62,9 +62,18 @@ class CrossValidator(object):
 				% type(model).__name__)
 		self.reset_cv_results() # remove old results
 		cv = self.cv_driver(**self.cv_props)
-		pool = multiprocessing.Pool(n_jobs)
-		res = pool.starmap(self._cv_thread_func,
-			self._cv_thread_arg_iter(cv, model, X, Y, duo_label = duo_label))
+		if n_jobs == 1:
+			# explicitly run it with out multiprocessing to avoid
+			# children-from-daemonic-process problem
+			res = [self._cv_thread_func(*args) for args in\
+				self._cv_thread_arg_iter(cv, model, X, Y,
+					duo_label = duo_label)
+			]
+		else:
+			pool = multiprocessing.Pool(n_jobs)
+			res = pool.starmap(self._cv_thread_func,
+				self._cv_thread_arg_iter(cv, model, X, Y,
+					duo_label = duo_label))
 		self.add_cv_results(*res)
 		#for train, test in cv.split(X, Y[1] if duo_label else Y):
 		#	Y_train	= [y[train] for y in Y] if duo_label else Y[train]

@@ -35,7 +35,7 @@ def get_args():
 	return args
 
 
-def rank_growth_stage_features_by_strain(dataset, method: str,
+def rank_feature_growth_stage_relevance_by_strain(dataset, method: str,
 		strain_list = None) -> dict:
 	ret = dict()
 	rank_meth = pylib.FeatureRankCollection.query(method)()
@@ -66,8 +66,8 @@ def main():
 			% args.dataset)
 	dataset = pylib.DatasetCollection.get_dataset(args.dataset)
 	# calculate feature rank
-	rank_dict = rank_growth_stage_features_by_strain(dataset, args.rank_method,
-		strain_list = args.strain_list)
+	rank_dict = rank_feature_growth_stage_relevance_by_strain(
+		dataset, args.rank_method, strain_list = args.strain_list)
 	# output
 	with pylib.util.file_io.get_fh(args.output, "w") as fp:
 		for k in sorted(rank_dict.keys()):

@@ -1,3 +1,9 @@
 [submodule "script/pylib/dimreducers_collection/_ism_sdr"]
-	path = script/pylib/dimreducers_collection/_ism_sdr
+	path = external/ISM_supervised_DR
 	url = git@github.com:lguangyu/ISM_supervised_DR.git
+[submodule "script/pylib/wuML"]
+	path = external/wuML
+	url = https://github.com/endsley/wuML.git
+[submodule "external/wPlotLib"]
+	path = external/wPlotLib
+	url = https://github.com/endsley/wPlotLib.git
