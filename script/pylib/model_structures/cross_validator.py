@@ -3,6 +3,7 @@
 import abc
 import multiprocessing
 import sklearn.model_selection
+#import tqdm
 # custom lib
 import pylib.util
 from . import base

@@ -9,8 +9,8 @@ for training_dataset in {zijian-exponential,zijian-stationary-1,zijian-stationar
 	for testing_dataset in {zijian-exponential,zijian-stationary-1,zijian-stationary-2,zijian-stationary-3}; do
 		if [[ "$training_dataset" != "$testing_dataset" ]]; then
 			for dr in {none,kpca,lda,ism_sdr,pca,sup_pca}; do
-				for cls in {gnb,knn,lda,lr,rf,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv}; do
-					alloc_param="-p short -N1 -c1 --mem 16G --time 24:00:00 -x c[2000-2003]"
+				for cls in {gnb,knn,lda,lr,rf,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv,nn}; do
+					alloc_param="-p short -N1 -c1 --mem 16G --time 24:00:00"
 					job_desc="$training_dataset.$dr.$cls.$testing_dataset"
 					sbatch -J $job_desc \
 						-o "$log_dir/"$job_desc".log" \

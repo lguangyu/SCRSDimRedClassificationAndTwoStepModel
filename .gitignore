@@ -1,13 +1,13 @@
 # ignore module
-script/pylib/dimreducers_collection/_ism_sdr/*
+#script/pylib/dimreducers_collection/_ism_sdr/*
 
 # ignore data files
 archive/
-data/
+#batch_script/
 data.tar.bz2
+data/
 raw/
 remote/
-#batch_script/
 
 # intermediate results
 # easy recover by scripts
