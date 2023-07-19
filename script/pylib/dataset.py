@@ -8,21 +8,23 @@ import pylib.util
 
 
 class cached_property(property):
-	def __init__(self, fini, **kw): # **kw is omitted anyway...
+	def __init__(self, fini, **kw):  # **kw is omitted anyway...
 		self.prop_name = "_cp_" + fini.__name__
 		########################################################################
 		# wrapped fget and fdel; fset is omitted
 		# <inst> is the instance of object this property resides in
+
 		@functools.wraps(fini)
 		def fget(inst):
 			if not hasattr(inst, self.prop_name):
 				setattr(inst, self.prop_name, fini(inst))
 			return getattr(inst, self.prop_name)
+
 		def fdel(inst):
 			if hasattr(inst, self.prop_name):
 				delattr(inst, self.prop_name)
 			return
-		# 
+		#
 		return super().__init__(fget, None, fdel, **kw)
 
 
@@ -32,18 +34,18 @@ class DatasetBase(object):
 	"""
 	############################################################################
 	# maybe overridden to read from other files
-	_raw_data_file_		= "./data/oxford_28.normalized_l2.data.tsv"
-	_raw_label_file_	= "./data/oxford_28.labels.txt"
+	_raw_data_file_ = "./data/zijian_40.normalized_l2.data.tsv"
+	_raw_label_file_ = "./data/zijian_40.labels.txt"
 
 	############################################################################
 	# routines of preprocessing raw dataset into specific dataset
 	@cached_property
 	def raw_data(self):
-		return numpy.loadtxt(self._raw_data_file_, float, delimiter = "\t")
+		return numpy.loadtxt(self._raw_data_file_, float, delimiter="\t")
 
 	@cached_property
 	def raw_label(self):
-		return numpy.loadtxt(self._raw_label_file_, object, delimiter = "\t")
+		return numpy.loadtxt(self._raw_label_file_, object, delimiter="\t")
 
 	@property
 	def raw_phase_label(self):
@@ -70,8 +72,8 @@ class DatasetBase(object):
 	def pp_scale(self, data, *ka, **kw):
 		return sklearn.preprocessing.scale(data, *ka, **kw)
 
-	def pp_filter(self, cond, *data, axis = 0, **kw):
-		return tuple([numpy.compress(cond, d, axis = axis, **kw) for d in data])
+	def pp_filter(self, cond, *data, axis=0, **kw):
+		return tuple([numpy.compress(cond, d, axis=axis, **kw) for d in data])
 
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -150,124 +152,40 @@ class PhaseDatasetBase(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		_text_label, _data = self.pp_filter(
-			(self.raw_phase_label == self._extract_phase_), # condition
-			self.raw_strain_label, self.raw_data) # filtered list
+			(self.raw_phase_label == self._extract_phase_),  # condition
+			self.raw_strain_label, self.raw_data)  # filtered list
 		self.data_no_scale = _data
 		self.data = self.pp_scale(_data)
 		self.text_label = _text_label
 		self.label_encoder = self.strain_label_encoder
 		self.label = self.label_encoder.transform(_text_label)
-		return
-
-
-################################################################################
-# oxford datasets
-@DatasetCollection.register("oxford-exponential")
-class OxfordExponentialPhaseDataset(PhaseDatasetBase):
-	_extract_phase_ = "EXPONENTIAL"
-
-
-@DatasetCollection.register("oxford-platform-1", "oxford-stationary-1")
-class OxfordPlatform1PhaseDataset(PhaseDatasetBase):
-	_extract_phase_ = "PLATFORM1"
-
-
-@DatasetCollection.register("oxford-platform-2", "oxford-stationary-2")
-class OxfordPlatform2PhaseDataset(PhaseDatasetBase):
-	_extract_phase_ = "PLATFORM2"
-
-
-@DatasetCollection.register("oxford-strain-only")
-class OxfordStrainLabelDataset(SingleLabelDatasetBase):
-	def __init__(self, *ka, **kw):
-		super().__init__(*ka, **kw)
-		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
-		_text_label, _data = self.pp_filter(
-			no_st2_mask, # condition
-			self.raw_strain_label, self.raw_data) # filtered list
-		self.data_no_scale = _data
-		self.data = self.pp_scale(_data)
-		self.text_label = _text_label
-		self.label_encoder = self.strain_label_encoder
-		self.label = self.label_encoder.transform(_text_label)
-		return
-
-
-@DatasetCollection.register("oxford-phase-only")
-class OxfordPhaseLabelDataset(SingleLabelDatasetBase):
-	def __init__(self, *ka, **kw):
-		super().__init__(*ka, **kw)
-		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
-		_text_label, _data = self.pp_filter(
-			no_st2_mask, # condition
-			self.raw_phase_label, self.raw_data) # filtered list
-		self.data_no_scale = _data
-		self.data = self.pp_scale(_data)
-		self.text_label = _text_label
-		self.label_encoder = self.phase_label_encoder
-		self.label = self.label_encoder.transform(_text_label)
-		return
-
-
-@DatasetCollection.register("oxford-phase-and-strain", "oxford-duo-label")
-class OxfordDuoLabelDataset(DuoLabelDatasetBase):
-	def __init__(self, *ka, **kw):
-		super().__init__(*ka, **kw)
-		no_st2_mask = (self.raw_phase_label != "PLATFORM2")
-		_phase_text_label, _strain_text_label, _data = self.pp_filter(
-			no_st2_mask, # condition
-			# filtered list
-			self.raw_phase_label, self.raw_strain_label, self.raw_data)
-		self.data_no_scale = _data
-		self.data = self.pp_scale(_data)
-		self.phase_text_label = _phase_text_label
-		self.strain_text_label = _strain_text_label
-		self.phase_label = self.phase_label_encoder.transform(
-			_phase_text_label)
-		self.strain_label = self.strain_label_encoder.transform(
-			_strain_text_label)
 		return
 
 
 ################################################################################
 # zijian datasets
-ZIJIAN_DATA_FILE	= "./data/zijian_40.normalized_l2.data.tsv"
-ZIJIAN_LABEL_FILE	= "./data/zijian_40.labels.txt"
-
-
 @DatasetCollection.register("zijian-exponential")
 class ZijianExponentialPhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
 	_extract_phase_ = "Exponential"
 
 
 @DatasetCollection.register("zijian-stationary-1")
 class ZijianStationary1PhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
 	_extract_phase_ = "Stationary1"
 
 
 @DatasetCollection.register("zijian-stationary-2")
 class ZijianStationary2PhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
 	_extract_phase_ = "Stationary2"
 
 
 @DatasetCollection.register("zijian-stationary-3")
 class ZijianStationary3PhaseDataset(PhaseDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
 	_extract_phase_ = "Stationary3"
 
 
 @DatasetCollection.register("zijian-phase-only")
 class ZijianPhaseLabelDataset(SingleLabelDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
-
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		self.data_no_scale = self.raw_data
@@ -280,9 +198,6 @@ class ZijianPhaseLabelDataset(SingleLabelDatasetBase):
 
 @DatasetCollection.register("zijian-strain-only")
 class ZijianStrainLabelDataset(SingleLabelDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
-
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		self.data_no_scale = self.raw_data
@@ -295,9 +210,6 @@ class ZijianStrainLabelDataset(SingleLabelDatasetBase):
 
 @DatasetCollection.register("zijian-phase-and-strain", "zijian-duo-label")
 class ZijianDuoLabelDataset(DuoLabelDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
-
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		self.data_no_scale = self.raw_data
@@ -305,22 +217,20 @@ class ZijianDuoLabelDataset(DuoLabelDatasetBase):
 		self.phase_text_label = self.raw_phase_label
 		self.strain_text_label = self.raw_strain_label
 		self.phase_label = self.phase_label_encoder.transform(self.phase_text_label)
-		self.strain_label = self.strain_label_encoder.transform(self.strain_text_label)
+		self.strain_label = self.strain_label_encoder.transform(
+			self.strain_text_label)
 		return
 
 
 @DatasetCollection.register("zijian-exp-sta1-phase-only")
 class ZijianExpSta1PhaseLabelDataset(SingleLabelDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
-
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		mask = (self.raw_phase_label == "Exponential")\
 			| (self.raw_phase_label == "Stationary1")
 		_text_label, _data = self.pp_filter(
-			mask, # condition
-			self.raw_phase_label, self.raw_data) # filtered list
+			mask,  # condition
+			self.raw_phase_label, self.raw_data)  # filtered list
 		self.data_no_scale = _data
 		self.data = self.pp_scale(_data)
 		self.text_label = _text_label
@@ -331,16 +241,13 @@ class ZijianExpSta1PhaseLabelDataset(SingleLabelDatasetBase):
 
 @DatasetCollection.register("zijian-exp-sta1-strain-only")
 class ZijianExpStaStrainLabelDataset(SingleLabelDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
-
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		mask = (self.raw_phase_label == "Exponential")\
 			| (self.raw_phase_label == "Stationary1")
 		_text_label, _data = self.pp_filter(
-			mask, # condition
-			self.raw_strain_label, self.raw_data) # filtered list
+			mask,  # condition
+			self.raw_strain_label, self.raw_data)  # filtered list
 		self.data_no_scale = _data
 		self.data = self.pp_scale(_data)
 		self.text_label = _text_label
@@ -351,15 +258,12 @@ class ZijianExpStaStrainLabelDataset(SingleLabelDatasetBase):
 
 @DatasetCollection.register("zijian-exp-sta1-phase-and-strain", "zijian-exp-sta1-duo-label")
 class ZijianExpStaDuoLabelDataset(DuoLabelDatasetBase):
-	_raw_data_file_		= ZIJIAN_DATA_FILE
-	_raw_label_file_	= ZIJIAN_LABEL_FILE
-
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
 		mask = (self.raw_phase_label == "Exponential")\
 			| (self.raw_phase_label == "Stationary1")
 		_phase_text_label, _strain_text_label, _data = self.pp_filter(
-			mask, # condition
+			mask,  # condition
 			# filtered list
 			self.raw_phase_label, self.raw_strain_label, self.raw_data)
 		self.data_no_scale = _data
