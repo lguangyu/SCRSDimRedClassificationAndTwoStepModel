@@ -1,0 +1,17 @@
+numpy
+scipy
+matplotlib
+scikit-learn
+skfeature-gli
+pandas
+notebook
+seaborn
+xgboost
+autograd
+pot
+umap-learn
+shap
+imblearn
+torch
+torchvision
+torchaudio
