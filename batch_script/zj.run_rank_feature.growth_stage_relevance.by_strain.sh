@@ -1,12 +1,12 @@
 #!/bin/bash
 
 log_dir=".log" # ouput log directory
-out_dir="output/zijian/rank_feature"
+out_dir="output/zj/rank_feature"
 mkdir -p $log_dir
 mkdir -p $out_dir
 
-dataset="zijian-phase-and-strain"
-for s in $(cut -f2 data/zijian_40.labels.txt | uniq | sort | uniq); do
+dataset="zj-phase-and-strain"
+for s in $(cut -f2 data/zj_40.labels.txt | uniq | sort | uniq); do
 	#for m in {fisher_score,hsic,lap_score,trace_ratio}; do
 	for m in {lap_score,}; do
 		n_cores="8"

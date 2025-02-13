@@ -1,11 +1,11 @@
 #!/bin/bash
 
 log_dir=".log" # ouput log directory
-out_dir="output/zijian/t2/step_2"
+out_dir="output/zj/t2/step_2-exp_sta1"
 mkdir -p $log_dir
 mkdir -p $out_dir
 
-dataset="zijian-phase-and-strain"
+dataset="zj-exp-sta1-phase-and-strain"
 dr1=none
 cls1=svm_rbf_man
 cls1_disp=svm_rbf_cv

@@ -1,12 +1,12 @@
 #!/bin/bash
 
 log_dir=".log" # ouput log directory
-out_dir="output/zijian/t1_cross_phase"
+out_dir="output/zj/t1_cross_phase"
 mkdir -p $log_dir
 mkdir -p $out_dir
 
-for training_dataset in {zijian-exponential,zijian-stationary-1,zijian-stationary-2,zijian-stationary-3}; do
-	for testing_dataset in {zijian-exponential,zijian-stationary-1,zijian-stationary-2,zijian-stationary-3}; do
+for training_dataset in {zj-exponential,zj-stationary-1,zj-stationary-2,zj-stationary-3}; do
+	for testing_dataset in {zj-exponential,zj-stationary-1,zj-stationary-2,zj-stationary-3}; do
 		if [[ "$training_dataset" != "$testing_dataset" ]]; then
 			for dr in {none,kpca,lda,ism_sdr,pca,sup_pca}; do
 				for cls in {gnb,knn,lda,lr,rf,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv,nn}; do

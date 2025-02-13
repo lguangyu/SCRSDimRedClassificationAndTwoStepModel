@@ -1,11 +1,11 @@
 #!/bin/bash
 
 log_dir=".log" # ouput log directory
-out_dir="output/zijian/rank_feature"
+out_dir="output/zj/rank_feature"
 mkdir -p $log_dir
 mkdir -p $out_dir
 
-dataset="zijian-phase-and-strain"
+dataset="zj-phase-and-strain"
 for m in {fisher_score,hsic,lap_score,trace_ratio}; do
 	n_cores="8"
 	alloc_param="-p short -N1 -c$n_cores --mem 16G --time 24:00:00"

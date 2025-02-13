@@ -34,8 +34,8 @@ class DatasetBase(object):
 	"""
 	############################################################################
 	# maybe overridden to read from other files
-	_raw_data_file_ = "./data/zijian_40.normalized_l2.data.tsv"
-	_raw_label_file_ = "./data/zijian_40.labels.txt"
+	_raw_data_file_ = "./data/zj_40.normalized_l2.data.tsv"
+	_raw_label_file_ = "./data/zj_40.labels.txt"
 
 	############################################################################
 	# routines of preprocessing raw dataset into specific dataset
@@ -181,28 +181,28 @@ class PhaseDatasetBase(SingleLabelDatasetBase):
 
 
 ################################################################################
-# zijian datasets
-@DatasetCollection.register("zijian-exponential")
+# zj datasets
+@DatasetCollection.register("zj-exponential")
 class ZijianExponentialPhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "Exponential"
 
 
-@DatasetCollection.register("zijian-stationary-1")
+@DatasetCollection.register("zj-stationary-1")
 class ZijianStationary1PhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "Stationary1"
 
 
-@DatasetCollection.register("zijian-stationary-2")
+@DatasetCollection.register("zj-stationary-2")
 class ZijianStationary2PhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "Stationary2"
 
 
-@DatasetCollection.register("zijian-stationary-3")
+@DatasetCollection.register("zj-stationary-3")
 class ZijianStationary3PhaseDataset(PhaseDatasetBase):
 	_extract_phase_ = "Stationary3"
 
 
-@DatasetCollection.register("zijian-phase-only")
+@DatasetCollection.register("zj-phase-only")
 class ZijianPhaseLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -214,7 +214,7 @@ class ZijianPhaseLabelDataset(SingleLabelDatasetBase):
 		return
 
 
-@DatasetCollection.register("zijian-strain-only")
+@DatasetCollection.register("zj-strain-only")
 class ZijianStrainLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -226,7 +226,7 @@ class ZijianStrainLabelDataset(SingleLabelDatasetBase):
 		return
 
 
-@DatasetCollection.register("zijian-phase-and-strain", "zijian-duo-label")
+@DatasetCollection.register("zj-phase-and-strain", "zj-duo-label")
 class ZijianDuoLabelDataset(DuoLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -240,7 +240,7 @@ class ZijianDuoLabelDataset(DuoLabelDatasetBase):
 		return
 
 
-@DatasetCollection.register("zijian-exp-sta1-phase-only")
+@DatasetCollection.register("zj-exp-sta1-phase-only")
 class ZijianExpSta1PhaseLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -257,7 +257,7 @@ class ZijianExpSta1PhaseLabelDataset(SingleLabelDatasetBase):
 		return
 
 
-@DatasetCollection.register("zijian-exp-sta1-strain-only")
+@DatasetCollection.register("zj-exp-sta1-strain-only")
 class ZijianExpStaStrainLabelDataset(SingleLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)
@@ -274,7 +274,7 @@ class ZijianExpStaStrainLabelDataset(SingleLabelDatasetBase):
 		return
 
 
-@DatasetCollection.register("zijian-exp-sta1-phase-and-strain", "zijian-exp-sta1-duo-label")
+@DatasetCollection.register("zj-exp-sta1-phase-and-strain", "zj-exp-sta1-duo-label")
 class ZijianExpStaDuoLabelDataset(DuoLabelDatasetBase):
 	def __init__(self, *ka, **kw):
 		super().__init__(*ka, **kw)

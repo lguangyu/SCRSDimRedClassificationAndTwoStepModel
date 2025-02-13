@@ -1,12 +1,12 @@
 #!/bin/bash
 
 log_dir=".log" # ouput log directory
-out_dir="output/zijian/dim_test"
+out_dir="output/zj/dim_test"
 mkdir -p $log_dir
 mkdir -p $out_dir
 
 
-for dataset in {zijian-exponential,zijian-stationary-1,zijian-stationary-2,zijian-stationary-3}; do
+for dataset in {zj-exponential,zj-stationary-1,zj-stationary-2,zj-stationary-3}; do
 	for dr in {kpca,lda,ism_sdr,pca,sup_pca}; do
 		for cls in {gnb,knn,lda,lr,rf,svm_lin,svm_rbf,svm_lin_cv,svm_rbf_cv,nn}; do
 			n_cores="10"
